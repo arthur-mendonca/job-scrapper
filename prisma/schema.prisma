@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Job {
+  id                String    @id @default(cuid())
+  source            String
+  sourceUrl         String
+  canonicalUrl      String    @unique
+  title             String
+  normalizedTitle   String
+  companyName       String
+  location          String?
+  remoteType        String
+  salaryMin         Int?
+  salaryMax         Int?
+  currency          String?
+  seniority         String?
+  description       String?
+  requirements      String?
+  stackTags         String[]  @default([])
+  postedAt          DateTime?
+  discoveredAt      DateTime  @default(now())
+  lastSeenAt        DateTime  @default(now())
+  score             Int       @default(0)
+  sourceTrustScore  Int
+  status            String    @default("new")
+  contentHash       String
+  notifiedAt        DateTime?
+  matchReasons      Json?
+  riskFlags         Json?
+  recommendedAction String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  events            JobEvent[]
+
+  @@index([contentHash])
+  @@index([companyName])
+  @@index([normalizedTitle])
+  @@index([score])
+  @@index([sourceTrustScore])
+  @@index([status])
+  @@index([notifiedAt])
+  @@index([lastSeenAt])
+}
+
+model Company {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  website    String?
+  careersUrl String?
+  atsType    String?
+  priority   Int      @default(0)
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Recruiter {
+  id              String    @id @default(cuid())
+  name            String
+  companyName     String?
+  linkedinUrl     String?
+  email           String?
+  notes           String?
+  lastContactedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([companyName])
+  @@index([email])
+}
+
+model JobEvent {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  eventType String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([jobId])
+  @@index([eventType])
+  @@index([createdAt])
+}

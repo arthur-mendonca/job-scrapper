@@ -1,0 +1,342 @@
+Create a backend-only TypeScript/Node.js job intelligence pipeline for personal use.
+
+Goal:
+Automate the discovery of international remote software engineering opportunities without requiring me to manually search job boards every day.
+
+The app should collect jobs and hiring posts from multiple sources, normalize them, deduplicate them, score them against my profile, store them in a PostgreSQL database, and notify me through Telegram and optionally email.
+
+The app will be hosted on my own VPS and must run inside Docker containers using Docker Compose.
+
+Important constraints:
+- Do not use NestJS for the MVP.
+- Do not build a frontend for the MVP.
+- Do not use GitHub Actions as the scheduler.
+- The app must run as a Dockerized background worker on a VPS.
+- The app must support scheduled execution using an internal scheduler, such as node-cron, or a container-safe cron strategy.
+- Do not implement authenticated LinkedIn scraping, cookie-based scraping, CAPTCHA bypass, stealth browsing, or automation that logs into LinkedIn.
+- LinkedIn-related discovery should be limited to public search results, search-engine-indexed posts, manually provided URLs, or parsing job alert emails.
+- The system should be modular so that new collectors can be added later.
+
+My target profile:
+- Backend-leaning Full Stack Software Engineer
+- Main stack: TypeScript, Node.js, NestJS, React/Next.js
+- Additional skills: AWS, Docker, CI/CD, PostgreSQL, AI/LLM automation
+- Target roles: Mid-level / Intermediate Full Stack Engineer, Node.js Developer, Backend-leaning Full Stack Engineer, AI Automation Engineer
+- Preferred market: remote international roles, LATAM-friendly, USD compensation
+- Avoid roles requiring 7+ years, staff/principal-only roles, onsite/hybrid roles, US-only roles, or roles where Python/Java/.NET/PHP are the primary stack
+
+Technical stack:
+- TypeScript
+- Node.js
+- pnpm
+- Prisma ORM
+- PostgreSQL
+- Zod
+- Cheerio for static HTML parsing
+- Playwright only for public pages that require rendering, without login or anti-bot bypass
+- Telegram Bot API for notifications
+- Optional email notifications
+- SearXNG as a self-hosted metasearch API
+- Docker
+- Docker Compose
+- node-cron or similar scheduler for periodic execution
+- Pino or Winston for structured logging
+
+Hosting/deployment requirements:
+- The app must run on a VPS using Docker Compose.
+- Provide a production-ready Dockerfile.
+- Provide a docker-compose.yml with at least:
+  - app worker container
+  - PostgreSQL container
+  - optional SearXNG container or external SearXNG URL support
+- The app container must restart automatically unless stopped.
+- Add healthcheck where reasonable.
+- Add persistent PostgreSQL volume.
+- Add .env.example with all required environment variables.
+- Add logs suitable for VPS operation.
+- The app must be able to run in two modes:
+  1. one-shot mode: run collectors once and exit
+  2. worker mode: keep running and execute collection on a schedule
+- The schedule must be configurable through environment variables.
+- The notification score threshold must be configurable through environment variables.
+- Database migrations must be documented.
+- The README must explain how to deploy on a VPS with Docker Compose.
+
+Runtime modes:
+- `pnpm dev`: local development
+- `pnpm build`: compile TypeScript
+- `pnpm start`: start worker mode
+- `pnpm collect`: run one collection cycle and exit
+- `pnpm report`: generate a summary report
+- `pnpm test:query`: test SearXNG queries
+- `pnpm prisma:migrate`: run Prisma migrations
+- `pnpm prisma:generate`: generate Prisma client
+
+Data sources:
+
+1. SearXNG collector:
+   - Query a self-hosted or externally hosted SearXNG instance using its HTTP Search API.
+   - Use search queries for remote TypeScript, Node.js, NestJS, React/Next.js, AWS, Docker, LATAM, contract, and USD jobs.
+   - Search for both formal job pages and hiring posts.
+   - SearXNG base URL must be configurable through environment variables.
+
+2. ATS collectors:
+   - Add collectors for public Greenhouse, Lever, Ashby, and Workable pages.
+   - Allow a configurable list of company career pages.
+   - The app should support a config file such as `config/companies.yml` or `config/sources.json`.
+
+3. Job board collectors:
+   - Remote OK
+   - We Work Remotely
+   - Remotive
+   - Himalayas or similar sources where accessible
+
+4. Email/job alert collector:
+   - Allow parsing raw job alert emails or email-exported HTML/text files.
+   - Extract job title, company, URL, location, and description when available.
+   - For the MVP, this can work by reading files from a mounted local folder such as `/app/input/email-alerts`.
+
+Core modules:
+
+1. collectors/
+   - Define a JobCollector interface.
+   - Implement collectors for SearXNG, ATS pages, job boards, and email alerts.
+   - Each collector should return raw job-like items in a common format.
+   - Collectors should not write directly to the database.
+
+2. normalizer/
+   - Normalize title, company, location, seniority, remote type, salary, stack tags, source URL, and canonical URL.
+   - Detect stack tags from title, description, and requirements.
+   - Detect seniority from title and description.
+   - Detect remote compatibility and location restrictions.
+
+3. scoring/
+   - Score each job from 0 to 100.
+   - Return score, match reasons, risk flags, and recommended action.
+   - Positive signals:
+     - TypeScript
+     - Node.js
+     - NestJS
+     - React
+     - Next.js
+     - AWS
+     - Docker
+     - CI/CD
+     - PostgreSQL
+     - REST APIs
+     - AI/LLM
+     - remote
+     - LATAM-friendly
+     - USD
+     - contract
+   - Negative signals:
+     - 7+ years required
+     - staff/principal-only
+     - onsite/hybrid
+     - US-only
+     - vague company
+     - unpaid test project
+     - primary Python/Java/.NET/PHP requirement
+     - unclear compensation
+     - generic job description
+
+4. deduplication/
+   - Deduplicate by:
+     - canonical URL
+     - normalized title + company
+     - content hash
+   - Avoid notifying the same job more than once.
+   - If an existing job is found again, update `updatedAt` and optionally create a JobEvent.
+
+5. persistence/
+   - Use Prisma repositories for jobs, companies, recruiters, and job events.
+   - Keep database operations separate from collectors.
+
+6. notifier/
+   - Telegram notifications for jobs above a configurable score threshold.
+   - Optional email digest.
+   - Do not notify jobs already notified.
+   - Add a daily or per-run summary notification.
+
+7. scheduler/
+   - Implement a worker that runs collection periodically.
+   - Use an environment variable such as `COLLECT_CRON`.
+   - Example: `COLLECT_CRON=0 */6 * * 1-5` to run every 6 hours on weekdays.
+   - Also support manual one-shot execution.
+
+8. cli/
+   - collect command
+   - worker command
+   - report command
+   - test-query command for SearXNG queries
+
+Database models:
+
+Job:
+- id
+- source
+- sourceUrl
+- canonicalUrl
+- title
+- normalizedTitle
+- companyName
+- location
+- remoteType
+- salaryMin
+- salaryMax
+- currency
+- seniority
+- description
+- requirements
+- stackTags
+- postedAt
+- discoveredAt
+- lastSeenAt
+- score
+- status
+- contentHash
+- notifiedAt
+- createdAt
+- updatedAt
+
+Company:
+- id
+- name
+- website
+- careersUrl
+- atsType
+- priority
+- notes
+- createdAt
+- updatedAt
+
+Recruiter:
+- id
+- name
+- companyName
+- linkedinUrl
+- email
+- notes
+- lastContactedAt
+- createdAt
+- updatedAt
+
+JobEvent:
+- id
+- jobId
+- eventType
+- metadata
+- createdAt
+
+Recommended job statuses:
+- new
+- notified
+- saved
+- applied
+- ignored
+- rejected
+- interviewing
+- offer
+- ghosted
+
+Notification format:
+For each high-scoring job, send:
+
+- score
+- title
+- company
+- location
+- salary if available
+- source
+- match reasons
+- risk flags
+- recommended action
+- link
+
+Example Telegram output:
+
+"🔥 87/100 — Full Stack Engineer — TypeScript/Node/AWS
+
+Company: ExampleCo
+Location: Remote LATAM
+Source: Greenhouse
+Salary: $5k–$7k USD, if available
+
+Why it matches:
+- TypeScript + Node.js
+- AWS/Docker
+- Remote LATAM
+
+Risks:
+- asks for 5+ years
+
+Recommended action:
+Apply through company website and contact recruiter.
+
+Link: ..."
+
+Environment variables:
+- NODE_ENV
+- DATABASE_URL
+- TELEGRAM_BOT_TOKEN
+- TELEGRAM_CHAT_ID
+- NOTIFICATION_SCORE_THRESHOLD
+- COLLECT_CRON
+- SEARXNG_BASE_URL
+- EMAIL_NOTIFICATIONS_ENABLED
+- SMTP_HOST
+- SMTP_PORT
+- SMTP_USER
+- SMTP_PASS
+- EMAIL_FROM
+- EMAIL_TO
+- LOG_LEVEL
+- INPUT_EMAIL_ALERTS_DIR
+
+Docker requirements:
+- Generate a production Dockerfile using multi-stage build.
+- Use pnpm.
+- Do not run the app as root inside the container.
+- Use a small Node base image where appropriate.
+- Ensure Prisma generate runs during build or startup as appropriate.
+- Provide docker-compose.yml with:
+  - app
+  - postgres
+  - optional searxng
+- Add named volumes for PostgreSQL data.
+- Add an input volume for raw email/job alert files.
+- Add restart policy.
+- Add example commands:
+  - docker compose up -d
+  - docker compose logs -f app
+  - docker compose exec app pnpm collect
+  - docker compose exec app pnpm prisma:migrate
+
+Generate:
+- complete project structure
+- package.json
+- tsconfig.json
+- Dockerfile
+- docker-compose.yml
+- .dockerignore
+- Prisma schema
+- .env.example
+- typed interfaces
+- sample collectors
+- SearXNG collector
+- ATS collector skeletons
+- scoring rules
+- deduplication service
+- Telegram notifier
+- scheduler/worker
+- CLI commands
+- README with local setup and VPS Docker deployment instructions
+
+Do not generate:
+- frontend
+- NestJS app
+- authenticated LinkedIn scraper
+- cookie-based scraper
+- CAPTCHA bypass
+- stealth browser automation
+- LinkedIn login automation

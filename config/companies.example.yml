@@ -1,0 +1,8 @@
+# Optional public career sources for future ATS/company collectors.
+# Keep credentials, private links, cookies, and logged-in URLs out of this file.
+companies:
+  - name: Example Company
+    careersUrl: https://example.com/careers
+    atsType: greenhouse
+    priority: 1
+    notes: Public careers page only.

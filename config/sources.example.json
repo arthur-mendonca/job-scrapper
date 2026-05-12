@@ -1,0 +1,145 @@
+[
+  {
+    "id": "remotive",
+    "name": "Remotive",
+    "type": "job_board",
+    "enabled": true,
+    "baseUrl": "https://remotive.com",
+    "accessMode": "api",
+    "sourceTrustScore": 95,
+    "rateLimitMs": 1500,
+    "attributionRequired": true,
+    "queries": ["typescript node", "node backend", "full stack react node"]
+  },
+  {
+    "id": "himalayas",
+    "name": "Himalayas",
+    "type": "job_board",
+    "enabled": true,
+    "baseUrl": "https://himalayas.app",
+    "accessMode": "api",
+    "sourceTrustScore": 95,
+    "rateLimitMs": 1500,
+    "attributionRequired": true,
+    "queries": ["typescript node", "node backend", "full stack react node"]
+  },
+  {
+    "id": "we-work-remotely",
+    "name": "We Work Remotely",
+    "type": "job_board",
+    "enabled": true,
+    "baseUrl": "https://weworkremotely.com",
+    "accessMode": "rss",
+    "sourceTrustScore": 90,
+    "rateLimitMs": 1500,
+    "attributionRequired": true,
+    "endpoints": [
+      "https://weworkremotely.com/categories/remote-programming-jobs.rss",
+      "https://weworkremotely.com/categories/remote-full-stack-programming-jobs.rss",
+      "https://weworkremotely.com/categories/remote-back-end-programming-jobs.rss"
+    ]
+  },
+  {
+    "id": "get-on-board",
+    "name": "Get on Board",
+    "type": "job_board",
+    "enabled": true,
+    "baseUrl": "https://www.getonbrd.com",
+    "accessMode": "api",
+    "sourceTrustScore": 90,
+    "rateLimitMs": 1500,
+    "attributionRequired": true,
+    "queries": ["TypeScript Node", "Node Backend", "Full Stack React Node"]
+  },
+  {
+    "id": "remote-ok",
+    "name": "Remote OK",
+    "type": "job_board",
+    "enabled": true,
+    "baseUrl": "https://remoteok.com",
+    "accessMode": "api",
+    "sourceTrustScore": 85,
+    "rateLimitMs": 2500,
+    "attributionRequired": true
+  },
+  {
+    "id": "y-combinator-jobs",
+    "name": "Y Combinator Jobs",
+    "type": "job_board",
+    "enabled": true,
+    "baseUrl": "https://www.ycombinator.com/jobs",
+    "accessMode": "html",
+    "sourceTrustScore": 80,
+    "rateLimitMs": 2500,
+    "attributionRequired": false
+  },
+  {
+    "id": "ciandt-careers",
+    "name": "CI&T Careers",
+    "type": "company",
+    "enabled": true,
+    "baseUrl": "https://ciandt.com/us/en-us/careers",
+    "accessMode": "html",
+    "sourceTrustScore": 90,
+    "rateLimitMs": 2500,
+    "attributionRequired": false,
+    "notes": "Official public company careers page."
+  },
+  {
+    "id": "onstrider",
+    "name": "Strider / Onstrider",
+    "type": "job_board",
+    "enabled": true,
+    "baseUrl": "https://www.onstrider.com/jobs",
+    "accessMode": "closed_public",
+    "sourceTrustScore": 75,
+    "rateLimitMs": 2500,
+    "attributionRequired": false,
+    "notes": "Public listings with a more closed application flow."
+  },
+  {
+    "id": "recrut-ai",
+    "name": "IT Recruiter / Recrut.ai",
+    "type": "job_board",
+    "enabled": true,
+    "baseUrl": "https://www.recrut.ai",
+    "accessMode": "closed_public",
+    "sourceTrustScore": 60,
+    "rateLimitMs": 3000,
+    "attributionRequired": false,
+    "notes": "Collect only public job pages detected by configured URLs or search results."
+  },
+  {
+    "id": "searxng",
+    "name": "SearXNG",
+    "type": "search",
+    "enabled": true,
+    "baseUrl": "",
+    "accessMode": "search",
+    "sourceTrustScore": 40,
+    "rateLimitMs": 1500,
+    "attributionRequired": false,
+    "queries": [
+      "remote TypeScript Node.js LATAM USD developer",
+      "remote Node.js backend engineer LATAM contract",
+      "remote NestJS developer USD",
+      "remote full stack TypeScript React Node LATAM",
+      "AI automation engineer Node.js remote",
+      "site:greenhouse.io TypeScript Node.js remote LATAM",
+      "site:lever.co Node.js remote LATAM",
+      "site:ashbyhq.com TypeScript remote LATAM",
+      "site:recrut.ai/careers/job remote software engineer"
+    ]
+  },
+  {
+    "id": "email-alerts",
+    "name": "Email Alerts",
+    "type": "email",
+    "enabled": true,
+    "baseUrl": "",
+    "accessMode": "email",
+    "sourceTrustScore": 50,
+    "rateLimitMs": 0,
+    "attributionRequired": false
+  }
+]

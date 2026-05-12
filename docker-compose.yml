@@ -1,0 +1,61 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/job_pipeline?schema=public}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      NOTIFICATION_SCORE_THRESHOLD: ${NOTIFICATION_SCORE_THRESHOLD:-75}
+      COLLECT_CRON: ${COLLECT_CRON:-0 */6 * * 1-5}
+      SEARXNG_BASE_URL: ${SEARXNG_BASE_URL:-http://searxng:8080}
+      EMAIL_NOTIFICATIONS_ENABLED: ${EMAIL_NOTIFICATIONS_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      EMAIL_TO: ${EMAIL_TO:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      INPUT_EMAIL_ALERTS_DIR: ${INPUT_EMAIL_ALERTS_DIR:-/app/input/email-alerts}
+      SOURCES_CONFIG_PATH: ${SOURCES_CONFIG_PATH:-config/sources.example.json}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./input/email-alerts:/app/input/email-alerts
+      - ./config/sources.example.json:/app/config/sources.example.json:ro
+    command: sh -c "pnpm prisma:migrate && pnpm start"
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: job_pipeline
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d job_pipeline"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  searxng:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    profiles:
+      - searxng
+    environment:
+      BASE_URL: http://localhost:8080/
+      INSTANCE_NAME: job-intelligence-searxng
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres-data:
