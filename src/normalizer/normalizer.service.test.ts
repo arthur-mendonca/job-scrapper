@@ -29,6 +29,8 @@ describe('normalizer detection', () => {
     } satisfies RawJobItem);
 
     expect(normalized?.sourceTrustScore).toBe(50);
+    expect(normalized?.collector).toBe('Email Alerts');
+    expect(normalized?.discoveredVia).toBe('Email Alerts');
     expect(normalized?.canonicalUrl).toBe('https://example.com/job');
     expect(normalized?.stackTags).toContain('Node.js');
   });

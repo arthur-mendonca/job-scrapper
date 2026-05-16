@@ -10,6 +10,9 @@ datasource db {
 model Job {
   id                String    @id @default(cuid())
   source            String
+  sourceId          String    @default("unknown")
+  collector         String    @default("unknown")
+  discoveredVia     String    @default("direct")
   sourceUrl         String
   canonicalUrl      String    @unique
   title             String
@@ -41,6 +44,9 @@ model Job {
 
   @@index([contentHash])
   @@index([companyName])
+  @@index([sourceId])
+  @@index([collector])
+  @@index([discoveredVia])
   @@index([normalizedTitle])
   @@index([score])
   @@index([sourceTrustScore])

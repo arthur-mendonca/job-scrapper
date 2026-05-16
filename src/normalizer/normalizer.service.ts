@@ -52,6 +52,8 @@ export function normalizeJob(raw: RawJobItem): NormalizedJob | null {
   return {
     source: raw.source,
     sourceId: raw.sourceId,
+    collector: compactWhitespace(raw.collector) || raw.source,
+    discoveredVia: compactWhitespace(raw.discoveredVia) || compactWhitespace(raw.collector) || raw.source,
     sourceUrl,
     canonicalUrl,
     sourceTrustScore: raw.sourceTrustScore,

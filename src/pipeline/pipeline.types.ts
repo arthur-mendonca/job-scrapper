@@ -4,6 +4,8 @@ export interface SourceRunMetrics {
   trustBucket: string;
   rawItems: number;
   normalizedItems: number;
+  acceptedItems: number;
+  rejectedItems: number;
   failures: number;
 }
 
@@ -12,6 +14,8 @@ export interface CollectionCycleSummary {
   finishedAt: Date;
   rawItems: number;
   normalizedJobs: number;
+  acceptedJobs: number;
+  rejectedJobs: number;
   newJobs: number;
   rediscoveredJobs: number;
   highScoringJobs: number;

@@ -4,9 +4,9 @@ import type { JobScore } from '../scoring/scoring.service.js';
 import { prisma } from './prisma.js';
 
 export class JobRepository {
-  async create(job: NormalizedJob, score: JobScore): Promise<Job> {
+  async create(job: NormalizedJob, score: JobScore, status = 'new'): Promise<Job> {
     return prisma.job.create({
-      data: toJobData(job, score)
+      data: toJobData(job, score, status)
     });
   }
 
@@ -39,16 +39,16 @@ export class JobRepository {
     );
   }
 
-  async updateRediscovered(existing: Job, job: NormalizedJob, score: JobScore): Promise<Job> {
+  async updateRediscovered(existing: Job, job: NormalizedJob, score: JobScore, status = existing.status): Promise<Job> {
     return prisma.job.update({
       where: { id: existing.id },
       data: {
-        ...toJobData(job, score),
+        ...toJobData(job, score, status),
         sourceTrustScore: Math.max(existing.sourceTrustScore, job.sourceTrustScore),
         discoveredAt: existing.discoveredAt,
         lastSeenAt: new Date(),
         notifiedAt: existing.notifiedAt,
-        status: existing.status
+        status
       }
     });
   }
@@ -79,9 +79,12 @@ export class JobRepository {
   }
 }
 
-function toJobData(job: NormalizedJob, score: JobScore): Prisma.JobUncheckedCreateInput {
+function toJobData(job: NormalizedJob, score: JobScore, status: string): Prisma.JobUncheckedCreateInput {
   return {
     source: job.source,
+    sourceId: job.sourceId,
+    collector: job.collector,
+    discoveredVia: job.discoveredVia,
     sourceUrl: job.sourceUrl,
     canonicalUrl: job.canonicalUrl,
     title: job.title,
@@ -100,7 +103,7 @@ function toJobData(job: NormalizedJob, score: JobScore): Prisma.JobUncheckedCrea
     lastSeenAt: new Date(),
     score: score.score,
     sourceTrustScore: job.sourceTrustScore,
-    status: 'new',
+    status,
     contentHash: job.contentHash,
     matchReasons: score.matchReasons,
     riskFlags: score.riskFlags,

@@ -14,7 +14,7 @@
     "collect": "node dist/cli/collect.js",
     "report": "node dist/cli/report.js",
     "test": "vitest run",
-    "test:query": "tsx src/cli/test-query.ts",
+    "test:query": "node dist/cli/test-query.js",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:generate": "prisma generate"
   },
@@ -25,13 +25,13 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.16",
     "pino": "^9.5.0",
+    "prisma": "^6.8.2",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.17",
-    "prisma": "^6.8.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

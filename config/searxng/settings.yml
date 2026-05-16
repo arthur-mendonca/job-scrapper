@@ -1,0 +1,14 @@
+use_default_settings: true
+
+general:
+  instance_name: job-intelligence-searxng
+
+search:
+  formats:
+    - html
+    - json
+
+server:
+  limiter: false
+  public_instance: false
+  secret_key: "change-this-local-development-secret"

@@ -8,6 +8,8 @@ export interface JobCollector {
 export interface RawJobItem {
   source: string;
   sourceId: string;
+  collector?: string;
+  discoveredVia?: string;
   sourceUrl: string;
   sourceTrustScore: number;
   sourceAccessMode: SourceAccessMode;

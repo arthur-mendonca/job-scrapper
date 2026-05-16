@@ -39,6 +39,8 @@ function buildJob(overrides: Partial<NormalizedJob> = {}): NormalizedJob {
   return {
     source: 'Remotive',
     sourceId: 'remotive',
+    collector: 'Remotive',
+    discoveredVia: 'Remotive',
     sourceUrl: 'https://example.com/job',
     canonicalUrl: 'https://example.com/job',
     sourceTrustScore: 95,

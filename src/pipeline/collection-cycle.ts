@@ -2,12 +2,13 @@ import type { Job } from '@prisma/client';
 import { trustBucket } from '../config/sources.js';
 import type { JobCollector, RawJobItem } from '../collectors/collector.types.js';
 import { logger } from '../logger/logger.js';
+import { filterJobForTargetProfile } from '../filtering/profile-filter.js';
 import { normalizeJob } from '../normalizer/normalizer.service.js';
 import type { NormalizedJob } from '../normalizer/normalizer.types.js';
 import { NotificationService } from '../notifier/notification.service.js';
 import { JobEventRepository } from '../persistence/job-event.repository.js';
 import { JobRepository } from '../persistence/job.repository.js';
-import { scoreJob } from '../scoring/scoring.service.js';
+import { scoreJob, type JobScore } from '../scoring/scoring.service.js';
 import type { CollectionCycleSummary, SourceRunMetrics } from './pipeline.types.js';
 
 export interface CollectionCycleOptions {
@@ -34,7 +35,11 @@ export class CollectionCycle {
     for (const collector of this.collectors) {
       logger.info({ collector: collector.name }, 'Collector started');
       try {
-        const collected = await collector.collect();
+        const collected = (await collector.collect()).map((item) => ({
+          ...item,
+          collector: item.collector ?? collector.name,
+          discoveredVia: item.discoveredVia ?? collector.name
+        }));
         rawItems.push(...collected);
         const first = collected[0];
         sourceMetrics.set(collector.name, {
@@ -43,6 +48,8 @@ export class CollectionCycle {
           trustBucket: trustBucket(first?.sourceTrustScore ?? 0),
           rawItems: collected.length,
           normalizedItems: 0,
+          acceptedItems: 0,
+          rejectedItems: 0,
           failures: 0
         });
         logger.info({ collector: collector.name, rawItems: collected.length }, 'Collector finished');
@@ -54,6 +61,8 @@ export class CollectionCycle {
           trustBucket: trustBucket(0),
           rawItems: 0,
           normalizedItems: 0,
+          acceptedItems: 0,
+          rejectedItems: 0,
           failures: 1
         });
         logger.error({ err: error, collector: collector.name }, 'Collector failed');
@@ -61,12 +70,55 @@ export class CollectionCycle {
     }
 
     const normalizedJobs = rawItems.map(normalizeJob).filter((job): job is NormalizedJob => job !== null);
+    const acceptedJobs: NormalizedJob[] = [];
+    let rejectedJobs = 0;
+
     for (const job of normalizedJobs) {
       const metric = sourceMetrics.get(job.source);
       if (metric) {
         metric.normalizedItems += 1;
         metric.sourceTrustScore = job.sourceTrustScore;
         metric.trustBucket = trustBucket(job.sourceTrustScore);
+      }
+
+      const filter = filterJobForTargetProfile(job);
+      if (filter.accepted) {
+        acceptedJobs.push(job);
+        if (metric) metric.acceptedItems += 1;
+      } else {
+        rejectedJobs += 1;
+        if (metric) metric.rejectedItems += 1;
+        const score = rejectedScore(job, filter.reason);
+        const existing = await this.jobRepository.findDuplicate(job);
+        const wasAlreadyRejected = existing?.status === 'rejected';
+        const status = rejectedRediscoveryStatus(existing?.status);
+        const persisted = existing
+          ? await this.jobRepository.updateRediscovered(existing, job, score, status)
+          : await this.jobRepository.create(job, score, 'rejected');
+
+        if (!wasAlreadyRejected) {
+          await this.jobEventRepository.create({
+            jobId: persisted.id,
+            eventType: 'rejected',
+            metadata: {
+              source: job.source,
+              sourceTrustScore: job.sourceTrustScore,
+              score: score.score,
+              reason: filter.reason
+            }
+          });
+        }
+
+        logger.debug(
+          {
+            title: job.title,
+            companyName: job.companyName,
+            source: job.source,
+            reason: filter.reason,
+            url: job.canonicalUrl
+          },
+          'Job rejected by target profile filter'
+        );
       }
     }
 
@@ -76,7 +128,7 @@ export class CollectionCycle {
     let notificationsSent = 0;
     const highScoringPersistedJobs: Job[] = [];
 
-    for (const normalized of normalizedJobs) {
+    for (const normalized of acceptedJobs) {
       const score = scoreJob(normalized);
       const existing = await this.jobRepository.findDuplicate(normalized);
       const persisted = existing
@@ -128,6 +180,8 @@ export class CollectionCycle {
       finishedAt,
       rawItems: rawItems.length,
       normalizedJobs: normalizedJobs.length,
+      acceptedJobs: acceptedJobs.length,
+      rejectedJobs,
       newJobs,
       rediscoveredJobs,
       highScoringJobs,
@@ -142,11 +196,27 @@ export class CollectionCycle {
   }
 }
 
+function rejectedScore(job: NormalizedJob, reason: string): JobScore {
+  const score = scoreJob(job);
+  return {
+    ...score,
+    riskFlags: [...new Set([...score.riskFlags, 'target-profile-rejected', `profile-filter:${reason}`])],
+    recommendedAction: `Rejected by target profile filter: ${reason}.`
+  };
+}
+
+function rejectedRediscoveryStatus(existingStatus: string | undefined): string {
+  if (!existingStatus || existingStatus === 'new' || existingStatus === 'rejected') {
+    return 'rejected';
+  }
+  return existingStatus;
+}
+
 export function formatRunSummary(summary: CollectionCycleSummary): string {
   const sourceLines = summary.sourceMetrics
     .map(
       (source) =>
-        `- ${source.source}: ${source.rawItems} raw, ${source.normalizedItems} normalized, trust ${source.sourceTrustScore}/100`
+        `- ${source.source}: ${source.rawItems} raw, ${source.normalizedItems} normalized, ${source.acceptedItems} accepted, ${source.rejectedItems} rejected, trust ${source.sourceTrustScore}/100`
     )
     .join('\n');
 
@@ -155,6 +225,8 @@ export function formatRunSummary(summary: CollectionCycleSummary): string {
     '',
     `Raw items: ${summary.rawItems}`,
     `Normalized jobs: ${summary.normalizedJobs}`,
+    `Accepted jobs: ${summary.acceptedJobs}`,
+    `Rejected jobs: ${summary.rejectedJobs}`,
     `New jobs: ${summary.newJobs}`,
     `Rediscovered jobs: ${summary.rediscoveredJobs}`,
     `High-scoring jobs: ${summary.highScoringJobs}`,

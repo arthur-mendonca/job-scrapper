@@ -1,5 +1,6 @@
 import type { SourceConfig } from '../config/sources.js';
 import { env } from '../config/env.js';
+import { logger } from '../logger/logger.js';
 import { fetchJson } from '../utils/http.js';
 import { sleep } from '../utils/sleep.js';
 import { compactWhitespace } from '../utils/text.js';
@@ -37,14 +38,31 @@ export class SearxngCollector implements JobCollector {
       const url = `${env.SEARXNG_BASE_URL.replace(/\/$/, '')}/search?q=${encodeURIComponent(
         query
       )}&format=json&categories=general&language=en-US`;
-      const data = await fetchJson<SearxngResponse>(url);
+      const data = await fetchJson<SearxngResponse>(url, { headers: searxngHeaders() });
+      const results = data.results ?? [];
+      logger.info(
+        {
+          query,
+          url,
+          rawResults: results.length,
+          sample: results.slice(0, 5).map((result) => ({
+            title: result.title,
+            url: result.url,
+            engine: result.engine,
+            inferredSource: result.url ? inferSourceFromUrl(result.url, this.allSources)?.name ?? null : null
+          }))
+        },
+        'SearXNG query returned results'
+      );
 
-      for (const result of data.results ?? []) {
+      for (const result of results) {
         if (!result.url || !result.title) continue;
         const inferredSource = inferSourceFromUrl(result.url, this.allSources);
         items.push({
           source: inferredSource ? `${inferredSource.name} via SearXNG` : this.source.name,
           sourceId: inferredSource?.id ?? this.source.id,
+          collector: this.source.name,
+          discoveredVia: this.source.name,
           sourceUrl: result.url,
           sourceTrustScore: inferredSource?.sourceTrustScore ?? this.source.sourceTrustScore,
           sourceAccessMode: inferredSource?.accessMode ?? this.source.accessMode,
@@ -57,7 +75,24 @@ export class SearxngCollector implements JobCollector {
       await sleep(this.source.rateLimitMs);
     }
 
-    return dedupeRawItems(items);
+    const deduped = dedupeRawItems(items);
+    logger.info(
+      {
+        rawItems: items.length,
+        dedupedItems: deduped.length,
+        sample: deduped.slice(0, 10).map((item) => ({
+          title: item.title,
+          source: item.source,
+          sourceId: item.sourceId,
+          collector: item.collector,
+          discoveredVia: item.discoveredVia,
+          url: item.sourceUrl
+        }))
+      },
+      'SearXNG collector finished'
+    );
+
+    return deduped;
   }
 }
 
@@ -72,4 +107,11 @@ function inferSourceFromUrl(url: string, sources: SourceConfig[]): SourceConfig 
       return Boolean(sourceDomain && resultDomain.endsWith(sourceDomain));
     }) ?? null
   );
+}
+
+export function searxngHeaders(): Record<string, string> {
+  return {
+    'x-forwarded-for': '127.0.0.1',
+    'x-real-ip': '127.0.0.1'
+  };
 }

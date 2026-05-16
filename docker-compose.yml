@@ -7,7 +7,7 @@ services:
         required: false
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/job_pipeline?schema=public}
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/job_pipeline?schema=public}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       NOTIFICATION_SCORE_THRESHOLD: ${NOTIFICATION_SCORE_THRESHOLD:-75}
@@ -30,11 +30,13 @@ services:
       - ./input/email-alerts:/app/input/email-alerts
       - ./config/sources.example.json:/app/config/sources.example.json:ro
     command: sh -c "pnpm prisma:migrate && pnpm start"
+    ports:
+      - "5555:5555"
 
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
-    ports: 
+    ports:
       - "5433:5432"
     environment:
       POSTGRES_USER: postgres
@@ -51,11 +53,11 @@ services:
   searxng:
     image: searxng/searxng:latest
     restart: unless-stopped
-    profiles:
-      - searxng
     environment:
       BASE_URL: http://localhost:8080/
       INSTANCE_NAME: job-intelligence-searxng
+    volumes:
+      - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
     ports:
       - "8080:8080"
 

@@ -5,6 +5,8 @@ export type RemoteType = 'remote' | 'hybrid' | 'onsite' | 'unknown';
 export interface NormalizedJob {
   source: string;
   sourceId: string;
+  collector: string;
+  discoveredVia: string;
   sourceUrl: string;
   canonicalUrl: string;
   sourceTrustScore: number;
