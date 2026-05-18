@@ -162,7 +162,7 @@ export class CollectionCycle {
       if (score.score >= this.options.notificationScoreThreshold) {
         highScoringJobs += 1;
         highScoringPersistedJobs.push(persisted);
-        if (!persisted.notifiedAt) {
+        if (!existing && !persisted.notifiedAt) {
           const sent = await this.notificationService.notifyJob(persisted);
           if (sent) {
             await this.jobRepository.markAsNotified(persisted.id);
