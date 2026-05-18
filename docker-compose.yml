@@ -28,7 +28,6 @@ services:
         condition: service_healthy
     volumes:
       - ./input/email-alerts:/app/input/email-alerts
-      - ./config/sources.example.json:/app/config/sources.example.json:ro
     command: sh -c "pnpm prisma:migrate && pnpm start"
     ports:
       - "5555:5555"
@@ -56,8 +55,6 @@ services:
     environment:
       BASE_URL: http://localhost:8080/
       INSTANCE_NAME: job-intelligence-searxng
-    volumes:
-      - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
     ports:
       - "8080:8080"
 
