@@ -1,13 +1,25 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+const unquote = (value: string): string => {
+  const trimmed = value.trim();
+  const first = trimmed.at(0);
+  const last = trimmed.at(-1);
+
+  if ((first === "'" && last === "'") || (first === '"' && last === '"')) {
+    return trimmed.slice(1, -1);
+  }
+
+  return trimmed;
+};
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string().min(1),
   TELEGRAM_BOT_TOKEN: z.string().default(''),
   TELEGRAM_CHAT_ID: z.string().default(''),
   NOTIFICATION_SCORE_THRESHOLD: z.coerce.number().int().min(0).max(100).default(75),
-  COLLECT_CRON: z.string().min(1).default('0 */6 * * 1-5'),
+  COLLECT_CRON: z.string().min(1).default('0 */6 * * 1-5').transform(unquote),
   SEARXNG_BASE_URL: z.string().url().default('http://searxng:8080'),
   EMAIL_NOTIFICATIONS_ENABLED: z
     .string()
