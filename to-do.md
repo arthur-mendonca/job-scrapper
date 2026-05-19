@@ -4,7 +4,7 @@
 
 Prioridade: **muito alta**.
 
-Como o app não tem frontend e isso aparece como limitação atual do projeto, o front é a principal evolução natural. 
+Como o app não tem frontend e isso aparece como limitação atual do projeto, o front é a principal evolução natural.
 
 Esse front não deveria ser “bonitinho”. Deveria ser um painel operacional para:
 
@@ -28,7 +28,7 @@ O Telegram pode continuar existindo, mas vira canal secundário.
 
 Prioridade: **alta**.
 
-Seu comentário marcou esse item como OK. O repo já possui `JobEvent`, `discoveredAt`, `lastSeenAt`, `notifiedAt`, `status` e eventos de descoberta/redescoberta. 
+Seu comentário marcou esse item como OK. O repo já possui `JobEvent`, `discoveredAt`, `lastSeenAt`, `notifiedAt`, `status` e eventos de descoberta/redescoberta.
 
 Mas falta uma tela para visualizar isso.
 
@@ -47,7 +47,7 @@ Execução de hoje:
 - erros por coletor
 ```
 
-Como o projeto já diferencia descoberta e redescoberta no fluxo, faz sentido exibir isso no front. A documentação diz que vagas novas são criadas e vagas existentes são atualizadas como redescobertas. 
+Como o projeto já diferencia descoberta e redescoberta no fluxo, faz sentido exibir isso no front. A documentação diz que vagas novas são criadas e vagas existentes são atualizadas como redescobertas.
 
 Aqui talvez valha criar uma tabela específica futura de `CollectionRun`, porque hoje os eventos existem, mas não parece haver uma entidade própria para “execução do scraper”.
 
@@ -86,7 +86,7 @@ recommendedAction
 lastSeenAt
 ```
 
-O schema já suporta boa parte disso. 
+O schema já suporta boa parte disso.
 
 A melhoria real seria permitir:
 
@@ -118,9 +118,9 @@ normalizedTitle + companyName
 contentHash
 ```
 
-Isso está documentado expressamente. 
+Isso está documentado expressamente.
 
-Como o projeto já atualiza vagas redescobertas preservando `discoveredAt`, `notifiedAt` e `status`, a base já está boa. 
+Como o projeto já atualiza vagas redescobertas preservando `discoveredAt`, `notifiedAt` e `status`, a base já está boa.
 
 O que pode ser adicionado depois:
 
@@ -138,7 +138,7 @@ Mas isso não é prioridade.
 
 Prioridade: **média**.
 
-Você marcou que já existe. O repo confirma que o scoring já considera sinais negativos como híbrido/presencial, US-only, 7+ anos, Staff/Principal only, teste longo, fonte suspeita, stack fora do alvo e descrição vaga. 
+Você marcou que já existe. O repo confirma que o scoring já considera sinais negativos como híbrido/presencial, US-only, 7+ anos, Staff/Principal only, teste longo, fonte suspeita, stack fora do alvo e descrição vaga.
 
 A evolução não é recriar filtros, mas permitir configurar alguns deles pelo front:
 
@@ -162,7 +162,7 @@ Prioridade: **alta**.
 
 Você comentou que já existe pontuação, mas talvez possa ser aperfeiçoada. Isso está correto.
 
-O repo já possui um scoring relativamente elaborado. Ele começa com base técnica de 35 pontos e ajusta por sinais positivos e negativos. Sinais positivos incluem TypeScript, Node, NestJS, React, Next, AWS, Docker, CI/CD, PostgreSQL, REST, AI, LLM, automação, remoto, LATAM/Americas/worldwide, salário claro e contrato/B2B. 
+O repo já possui um scoring relativamente elaborado. Ele começa com base técnica de 35 pontos e ajusta por sinais positivos e negativos. Sinais positivos incluem TypeScript, Node, NestJS, React, Next, AWS, Docker, CI/CD, PostgreSQL, REST, AI, LLM, automação, remoto, LATAM/Americas/worldwide, salário claro e contrato/B2B.
 
 Então a IA não deve substituir o score atual.
 
@@ -223,7 +223,7 @@ não analisar vagas descartadas
 não analisar vagas já analisadas
 ```
 
-Isso se encaixa bem no modelo atual porque `Job` já possui `score`, `status`, `matchReasons`, `riskFlags` e `recommendedAction`. 
+Isso se encaixa bem no modelo atual porque `Job` já possui `score`, `status`, `matchReasons`, `riskFlags` e `recommendedAction`.
 
 ---
 
@@ -372,7 +372,7 @@ Prioridade: **baixa/média**.
 
 Você comentou que talvez não se aplique porque o app já descarta repetidas. Concordo parcialmente.
 
-Como a deduplicação já existe, cache não é urgente. Mas o repo também trabalha com redescoberta e `lastSeenAt`; logo, uma vaga pode reaparecer sem virar nova. 
+Como a deduplicação já existe, cache não é urgente. Mas o repo também trabalha com redescoberta e `lastSeenAt`; logo, uma vaga pode reaparecer sem virar nova.
 
 Então cache de IA ainda faz sentido para:
 
@@ -441,7 +441,7 @@ discoveredAt
 lastSeenAt
 ```
 
-O schema atual já oferece esses campos. 
+O schema atual já oferece esses campos.
 
 Ações:
 
@@ -460,7 +460,7 @@ abrir link original
 
 Prioridade: **média-alta**.
 
-O projeto já usa `config/sources.example.json`, com fontes como Remotive, Himalayas, We Work Remotely, Get on Board, Remote OK, YC Jobs, CI&T, Onstrider, Recrut.ai, SearXNG e Email Alerts. 
+O projeto já usa `config/sources.example.json`, com fontes como Remotive, Himalayas, We Work Remotely, Get on Board, Remote OK, YC Jobs, CI&T, Onstrider, Recrut.ai, SearXNG e Email Alerts.
 
 Então a evolução certa é tirar parte dessa configuração do JSON estático e colocar no banco/front.
 
@@ -489,7 +489,7 @@ Isso evitaria editar JSON toda vez que quiser ligar/desligar fonte ou ajustar co
 
 Prioridade: **alta**.
 
-Você marcou como necessário, e o repo confirma que SearXNG já está previsto na configuração com várias queries. 
+Você marcou como necessário, e o repo confirma que SearXNG já está previsto na configuração com várias queries.
 
 A evolução correta:
 
@@ -518,7 +518,9 @@ score médio
 qualidade percebida
 ```
 
-Esse módulo é importante porque SearXNG pode trazer muito ruído.
+- Esse módulo é importante porque SearXNG pode trazer muito ruído.
+
+- Deve ser possível rodar o SearXNG individualmente com queries customizadas de forma independente do scraper principal.
 
 ---
 
@@ -693,7 +695,7 @@ Essa etapa só vem depois que o CV já estiver funcionando.
 
 Prioridade: **média-alta**.
 
-O repo já tem `status` em `Job`, `JobEvent`, `Company` e `Recruiter`, mas a documentação indica que `Company` e `Recruiter` ainda não aparecem integrados ao ciclo principal. 
+O repo já tem `status` em `Job`, `JobEvent`, `Company` e `Recruiter`, mas a documentação indica que `Company` e `Recruiter` ainda não aparecem integrados ao ciclo principal.
 
 Então o CRM pode aproveitar o que já existe.
 
@@ -737,7 +739,7 @@ ApplicationMessage
 
 Prioridade: **média/baixa**.
 
-O Telegram já é canal principal de notificação no projeto atual, incluindo score, título, tags, empresa, localidade, fonte, salário, motivos de match, flags de risco, ação recomendada e link. 
+O Telegram já é canal principal de notificação no projeto atual, incluindo score, título, tags, empresa, localidade, fonte, salário, motivos de match, flags de risco, ação recomendada e link.
 
 Com frontend, Telegram deixa de ser interface de operação e vira alerta:
 
@@ -802,7 +804,7 @@ Em paralelo ou logo depois:
 6. Medir qualidade por query
 ```
 
-Motivo: SearXNG pode aumentar muito volume e ruído. Sem painel de ajuste, vira difícil calibrar.
+Motivo: SearXNG pode aumentar muito volume e ruído. Sem painel de ajuste, fica difícil calibrar.
 
 ---
 
