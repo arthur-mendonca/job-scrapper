@@ -94,3 +94,27 @@ model JobEvent {
   @@index([eventType])
   @@index([createdAt])
 }
+
+model CollectionRun {
+  id                String    @id @default(cuid())
+  status            String    @default("running")
+  startedAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  rawItems          Int       @default(0)
+  normalizedJobs    Int       @default(0)
+  acceptedJobs      Int       @default(0)
+  rejectedJobs      Int       @default(0)
+  newJobs           Int       @default(0)
+  rediscoveredJobs  Int       @default(0)
+  highScoringJobs   Int       @default(0)
+  notificationsSent Int       @default(0)
+  collectorFailures Int       @default(0)
+  sourceMetrics     Json?
+  errors            Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status])
+  @@index([startedAt])
+  @@index([finishedAt])
+}

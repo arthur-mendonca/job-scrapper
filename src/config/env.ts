@@ -36,7 +36,10 @@ const envSchema = z.object({
   EMAIL_TO: z.string().default(''),
   LOG_LEVEL: z.string().default('info'),
   INPUT_EMAIL_ALERTS_DIR: z.string().min(1).default('/app/input/email-alerts'),
-  SOURCES_CONFIG_PATH: z.string().min(1).default('config/sources.example.json')
+  SOURCES_CONFIG_PATH: z.string().min(1).default('config/sources.example.json'),
+  API_HOST: z.string().min(1).default('0.0.0.0'),
+  API_PORT: z.coerce.number().int().positive().default(3000),
+  API_CORS_ORIGIN: z.string().min(1).default('http://localhost:5173')
 });
 
 export type Env = z.infer<typeof envSchema>;

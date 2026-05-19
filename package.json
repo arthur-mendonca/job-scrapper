@@ -9,8 +9,12 @@
   "packageManager": "pnpm@10.11.0",
   "scripts": {
     "dev": "tsx src/cli/worker.ts",
+    "dev:api": "tsx src/cli/api.ts",
+    "dev:worker": "tsx src/cli/worker.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
     "start": "node dist/cli/worker.js",
+    "start:api": "node dist/cli/api.js",
+    "start:worker": "node dist/cli/worker.js",
     "collect": "node dist/cli/collect.js",
     "report": "node dist/cli/report.js",
     "test": "vitest run",
@@ -19,9 +23,11 @@
     "prisma:generate": "prisma generate"
   },
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
     "@prisma/client": "^6.8.2",
     "cheerio": "^1.0.0",
     "dotenv": "^16.4.7",
+    "fastify": "^5.8.5",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.16",
     "pino": "^9.5.0",
