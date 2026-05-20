@@ -1,8 +1,8 @@
 # Job Intelligence Pipeline
 
-Backend-only TypeScript/Node.js pipeline for discovering international remote software engineering opportunities. It collects jobs from configured public sources, normalizes them, deduplicates repeated postings, scores them against a backend-leaning full stack profile, stores everything in PostgreSQL, and sends Telegram notifications for high-scoring matches.
+TypeScript/Node.js backend for discovering international remote software engineering opportunities and serving them to a separate frontend. It collects jobs from configured public sources, normalizes them, deduplicates repeated postings, scores them against a backend-leaning full stack profile, stores everything in PostgreSQL, exposes a Fastify API, and sends Telegram notifications for high-scoring matches.
 
-This MVP is designed to run as a Dockerized background worker on a VPS. It does not include a frontend.
+This MVP is designed to run as two Dockerized runtimes on a VPS: a background worker that writes to PostgreSQL and an API server that reads/updates data for a frontend. It does not include the frontend app in this repository.
 
 ## What It Does Not Do
 
@@ -11,11 +11,13 @@ This MVP is designed to run as a Dockerized background worker on a VPS. It does 
 - No private APIs or credentials for job boards.
 - No GitHub Actions scheduler.
 - No NestJS application for the MVP.
+- No built-in auth inside the API; put Cloudflare Access, Basic Auth, or another proxy in front of it when exposing it.
 
 ## Stack
 
 - TypeScript, Node.js, pnpm
 - Prisma ORM and PostgreSQL
+- Fastify for the API server
 - Zod for environment/config validation
 - Cheerio for static HTML/RSS parsing
 - node-cron for worker scheduling
@@ -95,43 +97,56 @@ pnpm test
 
 ## Docker Setup
 
-Create `.env` from `.env.example`, then start PostgreSQL and the app:
+Create `.env` from `.env.example`, then start PostgreSQL, migrations, API, worker and SearXNG:
 
 ```bash
 docker compose up -d
-docker compose logs -f app
+docker compose logs -f api worker
 ```
 
-Run a one-shot cycle inside the app container:
+Run a one-shot cycle inside the worker container:
 
 ```bash
-docker compose exec app pnpm collect
+docker compose exec worker pnpm collect
 ```
 
 Run migrations manually:
 
 ```bash
-docker compose exec app pnpm prisma:migrate
-```
-
-To run the optional local SearXNG container:
-
-```bash
-docker compose --profile searxng up -d
+docker compose run --rm migrate
 ```
 
 ## Commands
 
 - `pnpm dev`: start the worker through `tsx` for local development.
+- `pnpm dev:api`: start the Fastify API through `tsx`.
+- `pnpm dev:worker`: start the worker through `tsx`.
 - `pnpm build`: generate Prisma client and compile TypeScript to `dist`.
 - `pnpm start`: start scheduled worker mode from `dist`.
+- `pnpm start:api`: start the compiled Fastify API from `dist`.
+- `pnpm start:worker`: start scheduled worker mode from `dist`.
 - `pnpm collect`: run one complete collection cycle from `dist`.
 - `pnpm report`: log recent and high-scoring jobs.
 - `pnpm test:query`: test configured SearXNG queries.
 - `pnpm prisma:migrate`: apply Prisma migrations.
 - `pnpm prisma:generate`: generate Prisma client.
 
-`pnpm collect`, `pnpm start`, and `pnpm report` expect the project to be built first.
+`pnpm collect`, `pnpm start`, `pnpm start:api`, `pnpm start:worker`, and `pnpm report` expect the project to be built first.
+
+## API
+
+The API listens on `API_HOST` and `API_PORT` and exposes:
+
+- `GET /health`: process and database health.
+- `GET /api/dashboard`: operational metrics, top sources/stacks, last collection run and recent run errors.
+- `GET /api/jobs`: paginated jobs with server-side filters and sorting.
+- `GET /api/jobs/:id`: job detail with event history.
+- `PATCH /api/jobs/:id/status`: update workflow status to `new`, `saved`, `discarded` or `applied`.
+- `GET /api/sources`: configured sources enriched with persisted job stats.
+- `GET /api/events`: recent job events with optional filters.
+- `GET /api/settings`: read-only settings useful to the frontend.
+
+`GET /api/jobs` supports `page`, `pageSize`, `status`, `source`, `stack`, `minScore`, `remoteType`, `seniority`, `q` and `sort`. Supported sort values are `lastSeen_desc`, `score_desc`, `discovered_desc`, `company_asc` and `title_asc`.
 
 ## Environment Variables
 
@@ -147,6 +162,9 @@ Key variables:
 - `SEARXNG_BASE_URL`: SearXNG base URL.
 - `INPUT_EMAIL_ALERTS_DIR`: directory for `.txt` and `.html` job alert files.
 - `SOURCES_CONFIG_PATH`: source registry JSON path.
+- `API_HOST`: Fastify listen host.
+- `API_PORT`: Fastify listen port.
+- `API_CORS_ORIGIN`: comma-separated frontend origins, or `*`.
 
 See `.env.example` for the full list.
 
@@ -183,8 +201,9 @@ Collectors fail source-by-source. A blocked or changed source logs an error but 
 3. Deduplication checks canonical URL, normalized title/company, then content hash.
 4. Scoring computes technical match and source trust adjustment separately.
 5. Repositories persist jobs and job events.
-6. Notification service sends Telegram messages for jobs above threshold.
-7. Scheduler runs the cycle using `COLLECT_CRON` and prevents overlapping runs.
+6. Collection runs are persisted for dashboard visibility.
+7. Notification service sends Telegram messages for jobs above threshold.
+8. Scheduler runs the cycle using `COLLECT_CRON` and prevents overlapping runs.
 
 ## Known Limitations
 
