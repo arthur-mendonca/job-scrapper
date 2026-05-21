@@ -42,7 +42,7 @@ services:
       migrate:
         condition: service_completed_successfully
     command: pnpm start:api
-    expose:
+    ports:
       - "3000"
 
   worker:
