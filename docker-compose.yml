@@ -42,8 +42,8 @@ services:
       migrate:
         condition: service_completed_successfully
     command: pnpm start:api
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
 
   worker:
     build: .
@@ -62,8 +62,8 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
-    ports:
-      - "5433:5432"
+    expose:
+      - "5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -82,8 +82,8 @@ services:
     environment:
       BASE_URL: http://localhost:8080/
       INSTANCE_NAME: job-intelligence-searxng
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
 
 volumes:
   postgres-data:

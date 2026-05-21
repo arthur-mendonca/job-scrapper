@@ -31,4 +31,5 @@ COPY config ./config
 COPY package.json pnpm-lock.yaml ./
 RUN mkdir -p /app/input/email-alerts && chown -R node:node /app
 USER node
+EXPOSE 3000
 CMD ["pnpm", "start"]
