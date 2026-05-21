@@ -101,7 +101,7 @@ Create `.env` from `.env.example`, then start PostgreSQL, migrations, API, worke
 
 ```bash
 docker compose up -d
-docker compose logs -f api worker
+docker compose logs -f app worker
 ```
 
 Run a one-shot cycle inside the worker container:

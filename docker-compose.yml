@@ -31,7 +31,7 @@ services:
         condition: service_healthy
     command: pnpm prisma:migrate
 
-  api:
+  app:
     build: .
     restart: unless-stopped
     environment:
