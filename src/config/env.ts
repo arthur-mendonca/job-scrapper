@@ -39,9 +39,22 @@ const envSchema = z.object({
   SOURCES_CONFIG_PATH: z.string().min(1).default('config/sources.example.json'),
   API_HOST: z.string().min(1).default('0.0.0.0'),
   API_PORT: z.coerce.number().int().positive().default(3000),
-  API_CORS_ORIGIN: z.string().min(1).default('http://localhost:5173')
+  API_CORS_ORIGIN: z.string().min(1).default('http://localhost:5173'),
+  API_INTERNAL_SECRET: z.string().default(''),
+  API_REQUIRE_INTERNAL_AUTH: z
+    .string()
+    .default('false')
+    .transform((value) => value.toLowerCase() === 'true')
 });
 
 export type Env = z.infer<typeof envSchema>;
 
 export const env: Env = envSchema.parse(process.env);
+
+if (
+  env.NODE_ENV === 'production' &&
+  env.API_REQUIRE_INTERNAL_AUTH &&
+  env.API_INTERNAL_SECRET.trim() === ''
+) {
+  throw new Error('API_INTERNAL_SECRET is required when API_REQUIRE_INTERNAL_AUTH=true in production.');
+}

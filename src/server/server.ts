@@ -3,7 +3,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { env } from '../config/env.js';
 import { logger } from '../logger/logger.js';
 import { prisma } from '../persistence/prisma.js';
-import { formatApiError } from './errors.js';
+import { ApiError, formatApiError } from './errors.js';
 import { registerDashboardRoutes } from './routes/dashboard.routes.js';
 import { registerEventsRoutes } from './routes/events.routes.js';
 import { registerJobsRoutes } from './routes/jobs.routes.js';
@@ -15,6 +15,21 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   await app.register(cors, {
     origin: parseCorsOrigin(env.API_CORS_ORIGIN)
+  });
+
+  app.addHook('onRequest', async (request) => {
+    if (!env.API_REQUIRE_INTERNAL_AUTH) return;
+
+    const path = request.url.split('?')[0] ?? '';
+    const shouldProtect = path === '/health' || path === '/api' || path.startsWith('/api/');
+    if (!shouldProtect) return;
+
+    const headerValue = request.headers['x-internal-api-secret'];
+    const receivedSecret = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+
+    if (!receivedSecret || receivedSecret !== env.API_INTERNAL_SECRET) {
+      throw new ApiError(403, 'FORBIDDEN', 'Forbidden.');
+    }
   });
 
   app.setNotFoundHandler((_request, reply) => {
