@@ -1,43 +1,110 @@
 ## ADDED Requirements
 
-### Requirement: Backend-only MVP
-The system SHALL define the initial MVP as a backend-only TypeScript/Node.js job intelligence pipeline for personal use.
+### Requirement: Product mission and system boundary
+The system SHALL be a personal job intelligence backend that turns dispersed job sources into a single deduplicated, scored, persisted, and actionable job database.
 
-#### Scenario: MVP scope is evaluated
-- **WHEN** MVP requirements are reviewed
-- **THEN** the system contract excludes a frontend, NestJS, GitHub Actions scheduling, authenticated scraping, cookie-based scraping, CAPTCHA bypass, and stealth browser automation
+#### Scenario: Product scope is reviewed
+- **WHEN** a change proposes new system behavior
+- **THEN** it preserves the core mission of reducing manual job search effort through collection, normalization, deduplication, scoring, persistence, and notification
 
-### Requirement: Required technology stack
-The system SHALL use TypeScript, Node.js, pnpm, Prisma ORM, PostgreSQL, Zod, Cheerio, Docker Compose, node-cron or equivalent container-safe scheduling, and structured logging with Pino or Winston unless explicitly changed by a later spec.
+### Requirement: Backend-first architecture with API surface
+The system SHALL remain backend-first and worker-oriented while exposing backend API capabilities for operational consumers such as reports, dashboards, source management, and job curation.
 
-#### Scenario: Stack compliance is checked
-- **WHEN** a new implementation task selects core dependencies
-- **THEN** the selected dependencies match the required stack or the change explicitly documents and approves the deviation
+#### Scenario: Operational UI is introduced
+- **WHEN** a frontend or dashboard is added in a later change
+- **THEN** it uses the backend API and persisted pipeline data rather than replacing the collection pipeline or moving business logic into the browser
 
-### Requirement: Modular pipeline architecture
-The system SHALL keep collection, normalization, scoring, deduplication, persistence, notification, scheduling, API, logging, and configuration in separate modules with explicit boundaries.
+### Requirement: MVP non-goals and anti-abuse constraints
+The system MUST NOT include NestJS for the MVP, GitHub Actions scheduling, authenticated LinkedIn scraping, cookie-based scraping, private job-board APIs, CAPTCHA bypass, stealth browsing, LinkedIn login automation, or scraping strategies requiring user credentials or anti-bot evasion.
+
+#### Scenario: New source strategy is proposed
+- **WHEN** a source requires login, cookies, private API access, CAPTCHA bypass, or stealth automation
+- **THEN** the strategy is rejected for the MVP architecture
+
+### Requirement: Required technology baseline
+The system SHALL use TypeScript, Node.js, pnpm, Prisma ORM, PostgreSQL, Zod, Cheerio, Docker Compose, node-cron or equivalent container-safe scheduling, and structured logging with Pino or Winston unless a later spec explicitly changes the baseline.
+
+#### Scenario: Core dependency is selected
+- **WHEN** a change introduces or replaces core runtime, persistence, scheduling, validation, parsing, or logging dependencies
+- **THEN** the selected dependency aligns with the baseline or the change explicitly documents the approved deviation
+
+### Requirement: Pipeline stage architecture
+The system SHALL organize the job intelligence flow as configured sources, collectors, raw job items, normalization, normalized jobs, deduplication plus scoring, PostgreSQL/Prisma persistence, and notifications or reports.
+
+#### Scenario: Collection cycle executes
+- **WHEN** a collection cycle runs
+- **THEN** source data flows through collection, normalization, deduplication, scoring, persistence, and notification/reporting in that order
+
+### Requirement: Module responsibility boundaries
+The system SHALL keep responsibilities separated across config, collectors, normalizer, scoring, deduplication, persistence, pipeline orchestration, notifier, scheduler, CLI, API/server, logger, and utility modules.
 
 #### Scenario: Collector implementation is reviewed
 - **WHEN** a collector returns source data
-- **THEN** it does not write to the database, send notifications, or calculate final job scores
+- **THEN** it does not write to the database, send notifications, decide final scores, or update job lifecycle status
 
-### Requirement: Typed configuration boundary
-The system SHALL parse and validate environment variables through a typed configuration module and MUST NOT read `process.env` directly outside that module.
+#### Scenario: Persistence behavior is reviewed
+- **WHEN** a module needs to create, update, query, or mark persisted entities
+- **THEN** it uses repository boundaries rather than direct Prisma access from collectors, normalizers, scoring, or notifier code
+
+### Requirement: Source configuration architecture
+The system SHALL load source definitions from configuration, validate them with Zod, filter disabled sources, and instantiate enabled collectors through the collector registry.
+
+#### Scenario: Configured source is disabled
+- **WHEN** `SOURCES_CONFIG_PATH` points to a source configuration containing a disabled source
+- **THEN** that source is not instantiated for the collection cycle
+
+### Requirement: Runtime entrypoints
+The system SHALL support separate executable entrypoints for scheduled worker operation, one-shot collection, API serving, report generation, SearXNG query testing, and operational bootstrap where those entrypoints are implemented.
+
+#### Scenario: Operator chooses runtime mode
+- **WHEN** the operator runs the relevant package script
+- **THEN** the selected entrypoint performs only its intended role without requiring an unrelated runtime mode to be active
+
+### Requirement: Typed environment boundary
+The system SHALL centralize environment parsing in the typed config module, validate required values before dependent behavior runs, and MUST NOT read `process.env` directly across the codebase outside that config boundary.
 
 #### Scenario: Runtime configuration is loaded
-- **WHEN** the application starts
-- **THEN** required environment values are validated before pipeline, worker, API, or notification behavior depends on them
+- **WHEN** the worker, API, notifier, or pipeline starts
+- **THEN** configuration values are validated before they are used by runtime behavior
 
-### Requirement: Public-source and anti-abuse constraints
-The system SHALL only collect from public or configured sources and MUST NOT use credentials, session cookies, private APIs, CAPTCHA bypass, or anti-bot evasion.
+### Requirement: Source failure isolation
+The system SHALL treat collector failures as source-scoped failures and continue the collection cycle for other enabled sources unless an unrecoverable system error occurs.
 
-#### Scenario: LinkedIn-related discovery is configured
-- **WHEN** LinkedIn-related content is included as a source
-- **THEN** it is limited to public search results, search-engine-indexed pages, manually provided public URLs, or exported alert email files
+#### Scenario: One collector fails
+- **WHEN** one collector fails during a collection cycle
+- **THEN** the failure is logged with source context and the remaining collectors continue where possible
 
-### Requirement: VPS Docker operation
-The system SHALL be operable on a VPS through Docker Compose with an app worker container, PostgreSQL persistence, optional SearXNG support, restart policy, mounted email-alert input, and production-oriented logs.
+### Requirement: Observability and operational logging
+The system SHALL emit structured logs for cycle start and end, collector start and end, raw item counts per source, normalized jobs, accepted and rejected jobs, deduplication outcomes, new jobs, rediscovered jobs, high-scoring jobs, notification attempts, collector failures, notification failures, database errors, scheduler events, and API/server events where applicable.
 
-#### Scenario: Deployment contract is checked
-- **WHEN** the application is deployed through Docker Compose
-- **THEN** PostgreSQL data persists in a named volume and the app can run without requiring an interactive shell
+#### Scenario: Cycle completes with mixed results
+- **WHEN** a cycle has successful collectors and failed collectors
+- **THEN** logs and run metrics preserve enough information to understand counts, failures, and source-level outcomes without exposing secrets
+
+### Requirement: Historical operation model
+The system SHALL persist enough history to distinguish newly discovered opportunities from rediscovered jobs and to summarize collection runs over time.
+
+#### Scenario: Existing job is found again
+- **WHEN** a previously persisted job appears in a later source result
+- **THEN** the architecture supports updating rediscovery metadata and recording an event or run metric without treating it as a brand-new opportunity
+
+### Requirement: Docker and VPS deployment topology
+The system SHALL be operable on a VPS through Docker Compose with an app service, PostgreSQL service, optional SearXNG service or external SearXNG URL, persistent PostgreSQL volume, mounted email-alert input directory, restart policy, and production-oriented logs.
+
+#### Scenario: Docker deployment starts
+- **WHEN** Docker Compose starts the system
+- **THEN** the app can run in its configured mode, PostgreSQL data persists across restarts, and email alert input files can be mounted into the app container
+
+### Requirement: Private API deployment compatibility
+The system architecture SHALL support keeping the API off the public internet in production while allowing trusted internal services, such as a SvelteKit server or Telegram command bot, to call it over the private network.
+
+#### Scenario: Private deployment is configured
+- **WHEN** the system is deployed behind a frontend or internal bot
+- **THEN** browser clients do not need direct access to the API service and trusted server-side components can call the API by internal URL
+
+### Requirement: Evolution path preserves pipeline core
+Post-MVP capabilities such as an operational dashboard, AI review queue, source/query management, professional profile data, CV generation, and lightweight CRM SHALL build on persisted jobs, events, scores, statuses, and source metrics rather than bypassing the pipeline.
+
+#### Scenario: AI review is added
+- **WHEN** AI-assisted triage is introduced
+- **THEN** it operates after collection, normalization, deduplication, and heuristic scoring rather than replacing those stages
