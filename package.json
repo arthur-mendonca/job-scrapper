@@ -10,10 +10,12 @@
   "scripts": {
     "dev": "tsx src/cli/worker.ts",
     "dev:api": "tsx src/cli/api.ts",
+    "dev:bot": "tsx src/cli/telegram-health-bot.ts",
     "dev:worker": "tsx src/cli/worker.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
     "start": "node dist/cli/worker.js",
     "start:api": "node dist/cli/api.js",
+    "start:bot": "node dist/cli/telegram-health-bot.js",
     "start:worker": "node dist/cli/worker.js",
     "collect": "node dist/cli/collect.js",
     "report": "node dist/cli/report.js",
