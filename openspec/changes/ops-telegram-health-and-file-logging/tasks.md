@@ -18,3 +18,4 @@
 
 - [x] 3.1 Update internal auth so `GET /health` is public and ignores `X-Internal-Api-Secret`.
 - [x] 3.2 Update bot `/health` call behavior and API auth tests to reflect public `/health`.
+- [x] 3.3 Add request throttling to `GET /health` using Fastify rate limiting and add a test that verifies 429 responses when exceeded.

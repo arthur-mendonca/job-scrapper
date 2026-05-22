@@ -43,6 +43,21 @@ export function formatApiError(error: unknown) {
     };
   }
 
+  if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+    const statusCode = (error as { statusCode?: unknown }).statusCode;
+    if (statusCode === 429) {
+      return {
+        statusCode: 429,
+        body: {
+          error: {
+            code: 'TOO_MANY_REQUESTS',
+            message: 'Too many requests.'
+          }
+        }
+      };
+    }
+  }
+
   return {
     statusCode: 500,
     body: {

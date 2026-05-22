@@ -1,4 +1,5 @@
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyInstance } from "fastify";
 import { env } from "../config/env.js";
 import { fastifyLoggerOptions, logger } from "../logger/logger.js";
@@ -51,25 +52,32 @@ export async function buildServer(): Promise<FastifyInstance> {
     reply.status(formatted.statusCode).send(formatted.body);
   });
 
-  app.get("/health", async (_request, reply) => {
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-      return {
-        status: "ok",
-        database: "ok",
-        uptimeSeconds: Math.round(process.uptime()),
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error) {
-      logger.error({ err: error }, "Health check failed");
-      reply.status(503);
-      return {
-        status: "error",
-        database: "unavailable",
-        uptimeSeconds: Math.round(process.uptime()),
-        timestamp: new Date().toISOString(),
-      };
-    }
+  await app.register(async (healthApp) => {
+    await healthApp.register(rateLimit, {
+      max: 30,
+      timeWindow: "1 minute",
+    });
+
+    healthApp.get("/health", async (_request, reply) => {
+      try {
+        await prisma.$queryRaw`SELECT 1`;
+        return {
+          status: "ok",
+          database: "ok",
+          uptimeSeconds: Math.round(process.uptime()),
+          timestamp: new Date().toISOString(),
+        };
+      } catch (error) {
+        logger.error({ err: error }, "Health check failed");
+        reply.status(503);
+        return {
+          status: "error",
+          database: "unavailable",
+          uptimeSeconds: Math.round(process.uptime()),
+          timestamp: new Date().toISOString(),
+        };
+      }
+    });
   });
 
   await app.register(registerDashboardRoutes, { prefix: "/api" });
