@@ -1,13 +1,142 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Project: job-intelligence-pipeline.
+  Source context was consolidated from the files in agents/.
+
+  Mission:
+  - Personal backend job intelligence pipeline for discovering international remote software engineering opportunities.
+  - The system collects jobs and hiring posts from multiple public/configured sources, normalizes them, deduplicates them, scores them against the user's profile, stores them in PostgreSQL, and notifies high-value opportunities.
+  - The goal is to reduce daily manual searches across job boards, ATS pages, search engines, hiring posts, and exported job alert emails.
+
+  Current / base architecture:
+  - Backend-first TypeScript/Node.js app using pnpm.
+  - PostgreSQL persistence through Prisma repositories.
+  - Docker Compose deployment for VPS operation.
+  - Worker-oriented runtime with scheduled collection and one-shot collection.
+  - Modular pipeline boundaries: config, collectors, normalizer, scoring, deduplication, persistence, pipeline orchestration, scheduler, notifier, API, and logging.
+  - Collectors return raw items only. They must not write to the database, send notifications, or decide final scoring.
+  - Persistence belongs in repository modules. Avoid direct Prisma calls outside persistence unless there is a clear reason.
+  - Configuration must be parsed through a typed Zod-based config module. Avoid direct process.env reads outside config.
+  - Structured logs are required for VPS operation. Do not log secrets.
+
+  Non-negotiable MVP constraints:
+  - Do not introduce NestJS for the MVP.
+  - Do not build a frontend as part of the original backend-only MVP unless a later change explicitly targets the post-MVP dashboard.
+  - Do not use GitHub Actions as the scheduler.
+  - Do not implement authenticated LinkedIn scraping.
+  - Do not use cookies, session reuse, private APIs, CAPTCHA bypass, stealth browser automation, or login-based scraping.
+  - LinkedIn-related discovery is limited to public search results, search-engine-indexed pages, manually provided public URLs, and exported email/job alert files.
+  - Prefer an MVP that is reliable on a VPS over a broad system that is hard to operate.
+
+  Required stack and dependencies:
+  - TypeScript, Node.js, pnpm.
+  - Prisma ORM and PostgreSQL.
+  - Zod for validation and environment parsing.
+  - Cheerio for static HTML parsing.
+  - Playwright only for public pages requiring rendering, without login or anti-bot bypass.
+  - Telegram Bot API for notifications.
+  - Optional email notifications through SMTP.
+  - SearXNG as self-hosted or external metasearch.
+  - Docker and Docker Compose.
+  - node-cron or equivalent container-safe scheduler.
+  - Pino or Winston for structured logging.
+
+  Target candidate profile for scoring:
+  - Backend-leaning Full Stack Software Engineer.
+  - Main stack: TypeScript, Node.js, NestJS, React/Next.js.
+  - Additional skills: AWS, Docker, CI/CD, PostgreSQL, AI/LLM automation.
+  - Target roles: Mid-level / Intermediate Full Stack Engineer, Node.js Developer, Backend-leaning Full Stack Engineer, AI Automation Engineer.
+  - Preferred market: remote international roles, LATAM-friendly, USD compensation, contract or full-time roles open to international candidates.
+  - Penalize or ignore roles that are 7+ years required, staff/principal-only, onsite/hybrid, US-only, Python-first, Java-first, .NET-first, PHP-first, vague, low-information, unpaid-test-heavy, or unclear compensation with other risk signals.
+
+  Runtime modes and expected commands:
+  - pnpm dev: local development.
+  - pnpm build: compile TypeScript and generate Prisma client as needed.
+  - pnpm start: start worker mode.
+  - pnpm collect: run one collection cycle and exit.
+  - pnpm report: generate a summary report.
+  - pnpm test:query: test SearXNG queries.
+  - pnpm prisma:migrate: deploy Prisma migrations.
+  - pnpm prisma:generate: generate Prisma client.
+  - One-shot mode must collect, normalize, deduplicate, persist, score, notify eligible jobs, log, and exit cleanly.
+  - Worker mode must use COLLECT_CRON, prevent overlapping runs, log start/end/failure, handle errors without crashing when possible, and shut down gracefully on SIGINT/SIGTERM.
+
+  Source collection rules:
+  - Sources are configured, enabled/disabled, and instantiated through a registry.
+  - Supported source classes include SearXNG search, public ATS pages, public job boards, RSS/HTML sources, and local email alert files.
+  - SearXNG queries should target remote TypeScript, Node.js, NestJS, React/Next.js, AWS, Docker, LATAM, contract, USD, and AI automation opportunities. Search results are only candidates and must be normalized/scored later.
+  - Public ATS support should include Greenhouse, Lever, Ashby, and Workable using configured company career pages.
+  - Job boards may include Remote OK, We Work Remotely, Remotive, Himalayas, Get on Board, YC Jobs, and similar accessible public sources.
+  - Email alert collection reads local .txt and .html files from INPUT_EMAIL_ALERTS_DIR. Do not connect to Gmail or another email account in the MVP.
+  - A failed collector should be logged with source context and should not stop the whole cycle unless the error is unrecoverable.
+
+  Normalization rules:
+  - Convert RawJobItem into NormalizedJob.
+  - Normalize title, company name, location, remote type, salary range, currency, seniority, description, requirements, source URL, canonical URL, stack tags, posted date, and content hash.
+  - Canonicalize URLs by removing tracking parameters and fragments where safe.
+  - Detect remote type as remote, hybrid, onsite, or unknown.
+  - Preserve restrictions such as LATAM, Americas, worldwide, US-only, Europe-only, and country-only.
+  - Detect seniority including Intern, Junior, Mid-level, Intermediate, Senior, Staff, Principal, and Lead.
+  - Positive stack tags include TypeScript, JavaScript, Node.js, NestJS, React, Next.js, AWS, Docker, CI/CD, PostgreSQL, REST APIs, AI, LLM, and automation.
+  - Lower-priority or negative primary-stack tags include Python, Java, .NET, C#, PHP, Ruby, mobile-only, and WordPress-only.
+
+  Scoring rules:
+  - Score jobs from 0 to 100.
+  - Return score, match reasons, risk flags, and recommended action.
+  - Positive signals include target stack, backend-leaning full stack language, remote compatibility, LATAM/Americas/worldwide availability, USD or clear compensation, contract/B2B compatibility, clear company, and realistic requirements.
+  - Negative signals include 7+ years, staff/principal-only, onsite/hybrid, US-only, vague company, unpaid/long test project, primary Python/Java/.NET/PHP stack, unclear compensation, generic description, unclear restrictions, unrealistic requirements, low source trust, and closed/indirect sources.
+  - Keep source trust score separate from technical fit, then apply a clear trust adjustment or risk flag.
+  - Recommended actions should be explicit, for example apply through company website, apply and contact recruiter, save for manual review, ignore unless compensation is confirmed, or ignore due to location/seniority mismatch.
+
+  Deduplication and persistence:
+  - Deduplicate by canonical URL, then normalized title + company name, then content hash.
+  - Rediscovery should update lastSeenAt and updatedAt while preserving discoveredAt, notifiedAt, and existing status.
+  - Record JobEvent entries for discovered and rediscovered jobs where available.
+  - Do not notify the same persisted job more than once.
+  - Core models: Job, Company, Recruiter, JobEvent, and CollectionRun.
+  - Job should carry source metadata, canonical URL, normalized title, company, location, remote type, salary, currency, seniority, description, requirements, stack tags, posted/discovered/last-seen timestamps, score, source trust score, status, content hash, notifiedAt, match reasons, risk flags, recommended action, and audit timestamps.
+  - Supported statuses include new, notified, saved, applied, ignored, rejected, interviewing, offer, and ghosted.
+
+  Notification and reporting:
+  - Telegram is the primary immediate notification channel for jobs above NOTIFICATION_SCORE_THRESHOLD.
+  - Mark a job as notified only after successful notification.
+  - Telegram messages should be readable on mobile and include score, title, company, location, source, salary when available, match reasons, risks, recommended action, and link.
+  - Send or expose a per-run summary when supported: raw items, normalized jobs, accepted/rejected jobs, new jobs, rediscovered jobs, high-scoring jobs, notifications sent, collector failures, source metrics, and errors.
+  - Optional email digest is enabled only when EMAIL_NOTIFICATIONS_ENABLED=true and SMTP configuration is complete.
+
+  API and security:
+  - The API should be private in production and reachable through internal network paths rather than a public API domain.
+  - Protected API routes should require X-Internal-Api-Secret when API_REQUIRE_INTERNAL_AUTH=true.
+  - CORS is not a security boundary; it is only secondary browser control.
+  - If a frontend is used, it must call the API from SvelteKit server-side code using private env vars, not PUBLIC_* variables. The browser must not know the internal API URL or secret.
+  - Health should be checked internally. The Telegram /health plan uses a bot process that authorizes TELEGRAM_CHAT_ID, calls GET /health on INTERNAL_API_BASE_URL with X-Internal-Api-Secret, and returns a concise summary.
+  - The Telegram command bot should not expose bot tokens, chat IDs, API secrets, or sensitive errors in logs or responses.
+
+  Docker and deployment:
+  - Dockerfile should use pnpm, a reasonably small Node base image, reproducible installs, TypeScript build, Prisma client generation, production dependencies where practical, and non-root runtime user.
+  - docker-compose.yml should include app worker, postgres, optional searxng or external SEARXNG_BASE_URL support, named PostgreSQL volume, mounted input email-alert folder, restart policy, and healthcheck where reasonable.
+  - For private API deployment, prefer expose/internal network over publishing API ports.
+  - README/deployment docs should explain local setup, Docker setup, VPS deployment, env vars, migrations, one-shot mode, worker mode, sources, SearXNG, Telegram, collectors, known limitations, and anti-abuse constraints.
+
+  Quality and tests:
+  - Use strict TypeScript and explicit interfaces.
+  - Prefer unknown + validation over any.
+  - Keep side effects isolated.
+  - Critical logic should be testable: scoring rules, URL canonicalization, deduplication matching, stack detection, seniority detection, remote detection, SearXNG query testing, and email parser samples.
+  - Do not overbuild the testing framework, but protect matching and scoring behavior.
+
+  Post-MVP evolution:
+  - The repo is already a pipeline; the next major evolution is an operational interface, not a new scraper from scratch.
+  - Dashboard should show collection cycles, jobs collected, new/rediscovered jobs, duplicates, notifications, high-score jobs, source breakdown, average score, and collector errors.
+  - Job curation table should support filters by score, source, stack, status, date, and risk; actions should include save, discard, mark applied, open original link, and select for AI review.
+  - Source and SearXNG query management should allow enabling/disabling sources, editing query templates, testing queries, viewing raw results, and measuring query quality.
+  - AI should be used only after heuristic filtering: selected jobs, top N, score threshold, or manual queue. Do not analyze every collected job by default.
+  - AI workflow needs cost controls: daily/run limits, minimum score, model selection, and manual/assisted mode.
+  - AI result should be short and separate from heuristic scoring: aiScore, fit, comment, risk, recommended action, analyzedAt.
+  - Before CV generation, maintain a professional skill profile and truth base for allowed, cautious, and prohibited claims.
+  - CV generation should run only for selected jobs and start with reviewable Markdown/HTML before later PDF/DOCX export.
+  - Lightweight CRM can build on Job.status, JobEvent, Company, Recruiter, and later Application/GeneratedCv/ApplicationMessage if needed.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
