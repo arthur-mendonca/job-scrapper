@@ -12,6 +12,7 @@ This change adds an operational Telegram command bot process and strengthens log
 - Ensure the bot only responds to an authorized chat allowlist and does not invoke the API for unauthorized chats.
 - Add a file-backed logging sink under `/app/logs` that works in Docker Compose via `./logs:/app/logs`, while keeping stdout logs for container observability.
 - Enable consistent request/error logging for the Fastify API using the same Pino configuration used by the rest of the runtime.
+- Keep `GET /health` public and not protected by internal header authentication.
 
 **Non-Goals:**
 
@@ -31,6 +32,7 @@ This change adds an operational Telegram command bot process and strengthens log
 
 3. Require explicit env configuration for internal API calling from the bot.
    - Rationale: bot should not guess internal URLs; it must call a configured internal base URL (for example `http://app:3000`) and include `X-Internal-Api-Secret` when required.
+   - Note: `GET /health` is public and does not require internal auth headers.
 
 4. Add an optional file logging sink alongside stdout.
    - Rationale: stdout is still useful for container logs, but file persistence is valuable for audits and longer retention on a VPS.

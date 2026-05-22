@@ -13,3 +13,8 @@
 - [x] 2.3 Add Docker Compose volume mounts `./logs:/app/logs` for relevant services (API, worker, and bot if added).
 - [x] 2.4 Add `/logs/` to `.gitignore`.
 - [x] 2.5 Add a minimal verification step (run API + worker + bot locally in dev mode and confirm logs are emitted and secrets are redacted).
+
+## 3. Public Health Route
+
+- [x] 3.1 Update internal auth so `GET /health` is public and ignores `X-Internal-Api-Secret`.
+- [x] 3.2 Update bot `/health` call behavior and API auth tests to reflect public `/health`.

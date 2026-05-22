@@ -19,15 +19,11 @@ The bot runtime SHALL respond only to messages from authorized chats and MUST NO
 - **THEN** the bot ignores or rejects the command without calling the internal API
 
 ### Requirement: Internal API health call
-When handling `/health`, the bot runtime SHALL call the internal API health endpoint over the private network and include internal authentication headers when internal authentication is enabled.
+When handling `/health`, the bot runtime SHALL call the internal API health endpoint over the private network. The `/health` endpoint is public and the bot MUST NOT rely on `X-Internal-Api-Secret` for health checks.
 
-#### Scenario: Internal auth is enabled
-- **WHEN** internal authentication is enabled and `/health` is requested
-- **THEN** the bot includes `X-Internal-Api-Secret` when calling the internal API health endpoint
-
-#### Scenario: Internal auth is disabled
-- **WHEN** internal authentication is disabled and `/health` is requested
-- **THEN** the bot calls the internal API health endpoint without the internal secret header
+#### Scenario: Health is checked
+- **WHEN** `/health` is requested
+- **THEN** the bot calls the internal API health endpoint without requiring an internal secret header
 
 ### Requirement: Safe health response
 The `/health` response sent to Telegram SHALL be concise and MUST NOT include secrets, tokens, internal URLs, or raw error bodies.

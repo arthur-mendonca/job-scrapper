@@ -21,8 +21,7 @@ export async function buildServer(): Promise<FastifyInstance> {
     if (!env.API_REQUIRE_INTERNAL_AUTH) return;
 
     const path = request.url.split("?")[0] ?? "";
-    const shouldProtect =
-      path === "/health" || path === "/api" || path.startsWith("/api/");
+    const shouldProtect = path === "/api" || path.startsWith("/api/");
     if (!shouldProtect) return;
 
     const headerValue = request.headers["x-internal-api-secret"];

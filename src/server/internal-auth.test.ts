@@ -57,19 +57,12 @@ describe('internal API auth', () => {
     await app.close();
   });
 
-  it('protects /health when enabled', async () => {
+  it('does not protect /health when enabled', async () => {
     process.env.API_REQUIRE_INTERNAL_AUTH = 'true';
     process.env.API_INTERNAL_SECRET = 'test-secret';
     const app = await build();
     const resNoHeader = await app.inject({ method: 'GET', url: '/health' });
-    expect(resNoHeader.statusCode).toBe(403);
-
-    const resWithHeader = await app.inject({
-      method: 'GET',
-      url: '/health',
-      headers: { 'x-internal-api-secret': 'test-secret' }
-    });
-    expect([200, 503]).toContain(resWithHeader.statusCode);
+    expect([200, 503]).toContain(resNoHeader.statusCode);
     await app.close();
   });
 });

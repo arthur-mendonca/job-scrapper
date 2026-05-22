@@ -105,22 +105,10 @@ async function handleUpdate(
 
 async function handleHealthCommand(): Promise<string> {
   const url = `${env.INTERNAL_API_BASE_URL.replace(/\/$/, "")}/health`;
-  const headers: Record<string, string> = {};
-
-  if (env.API_REQUIRE_INTERNAL_AUTH) {
-    if (!env.API_INTERNAL_SECRET) {
-      logger.error(
-        "API_INTERNAL_SECRET is required when API_REQUIRE_INTERNAL_AUTH=true for telegram health bot",
-      );
-      return formatHealthError();
-    }
-    headers["x-internal-api-secret"] = env.API_INTERNAL_SECRET;
-  }
 
   try {
     const health = await fetchJson<HealthResponse>(url, {
       timeoutMs: 10000,
-      headers,
     });
     return formatHealthOk(health);
   } catch (error) {
