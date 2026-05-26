@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Health route is public
 
@@ -17,6 +17,8 @@ The API SHALL apply request throttling to `GET /health` to reduce abuse risk fro
 
 - **WHEN** a client exceeds the configured request threshold for `GET /health`
 - **THEN** the API responds with a rate-limit response (HTTP 429) without executing expensive downstream work
+
+## MODIFIED Requirements
 
 ### Requirement: Telegram health command
 

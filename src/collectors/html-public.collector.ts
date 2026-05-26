@@ -1,12 +1,14 @@
-import * as cheerio from 'cheerio';
-import type { SourceConfig } from '../config/sources.js';
-import { fetchText } from '../utils/http.js';
-import { canonicalizeUrl } from '../utils/url.js';
-import { compactWhitespace } from '../utils/text.js';
-import type { JobCollector, RawJobItem } from './collector.types.js';
+import * as cheerio from "cheerio";
+import type { SourceConfig } from "../config/sources.js";
+import { fetchText } from "../utils/http.js";
+import { canonicalizeUrl } from "../utils/url.js";
+import { compactWhitespace } from "../utils/text.js";
+import type { JobCollector, RawJobItem } from "./collector.types.js";
 
-const jobHrefPattern = /\/(jobs?|careers?|positions?|vagas?|openings?|opportunities?)(\/|$)|careers\/job/i;
-const jobTextPattern = /engineer|developer|software|backend|back-end|full stack|full-stack|node|typescript|react|devops|data|ai/i;
+const jobHrefPattern =
+  /\/(jobs?|careers?|positions?|vagas?|openings?|opportunities?)(\/|$)|careers\/job/i;
+const jobTextPattern =
+  /engineer|developer|software|backend|back-end|full stack|full-stack|node|typescript|react|devops|data|ai/i;
 
 export class PublicHtmlCollector implements JobCollector {
   readonly name: string;
@@ -16,7 +18,9 @@ export class PublicHtmlCollector implements JobCollector {
   }
 
   async collect(): Promise<RawJobItem[]> {
-    const urls = this.source.endpoints?.length ? this.source.endpoints : [this.source.baseUrl];
+    const urls = this.source.endpoints?.length
+      ? this.source.endpoints
+      : [this.source.baseUrl];
     const items: RawJobItem[] = [];
 
     for (const url of urls) {
@@ -28,25 +32,34 @@ export class PublicHtmlCollector implements JobCollector {
   }
 }
 
-export function extractPublicHtmlJobs(html: string, source: SourceConfig, pageUrl: string): RawJobItem[] {
+export function extractPublicHtmlJobs(
+  html: string,
+  source: SourceConfig,
+  pageUrl: string,
+): RawJobItem[] {
   const $ = cheerio.load(html);
   const items: RawJobItem[] = [];
 
-  $('a[href]').each((_, anchor) => {
+  $("a[href]").each((_, anchor) => {
     const link = $(anchor);
-    const href = link.attr('href');
+    const href = link.attr("href");
     if (!href) return;
 
     const absoluteUrl = canonicalizeUrl(href, pageUrl);
     const anchorText = compactWhitespace(link.text());
-    const parent = link.closest('article, li, section, div');
+    const parent = link.closest("article, li, section, div");
     const parentText = compactWhitespace(parent.text());
     const title =
-      compactWhitespace(parent.find('h1,h2,h3,h4,[class*=title],[class*=role],[class*=position]').first().text()) ||
-      anchorText;
+      compactWhitespace(
+        parent
+          .find("h1,h2,h3,h4,[class*=title],[class*=role],[class*=position]")
+          .first()
+          .text(),
+      ) || anchorText;
 
     const searchable = `${href} ${title} ${parentText}`;
-    if (!jobHrefPattern.test(searchable) && !jobTextPattern.test(searchable)) return;
+    if (!jobHrefPattern.test(searchable) && !jobTextPattern.test(searchable))
+      return;
     if (!title || title.length < 4 || title.length > 160) return;
 
     items.push({
@@ -56,10 +69,13 @@ export function extractPublicHtmlJobs(html: string, source: SourceConfig, pageUr
       sourceTrustScore: source.sourceTrustScore,
       sourceAccessMode: source.accessMode,
       title,
-      companyName: source.type === 'company' ? source.name.replace(/\s*Careers$/i, '') : undefined,
+      companyName:
+        source.type === "company"
+          ? source.name.replace(/\s*Careers$/i, "")
+          : undefined,
       location: extractLocation(parentText),
       description: parentText,
-      raw: { pageUrl }
+      raw: { pageUrl },
     });
   });
 
@@ -77,6 +93,8 @@ export function dedupeRawItems(items: RawJobItem[]): RawJobItem[] {
 }
 
 function extractLocation(text: string): string | undefined {
-  const match = text.match(/(Remote|Remoto|LATAM|Worldwide|Anywhere|Hybrid|Onsite|Brazil|Brasil|US|USA)[^|,.;)]{0,60}/i);
+  const locationPatterns =
+    /(Remote|Remoto|LATAM|Worldwide|Anywhere|Hybrid|Onsite|Brazil|Brasil|US|USA|India|Canada|Pakistan|Algeria|Colombia|Chile|South America)[^|,.;)]{0,60}/i;
+  const match = text.match(locationPatterns);
   return match?.[0]?.trim();
 }

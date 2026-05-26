@@ -11,6 +11,8 @@ The system SHALL emit structured logs to stdout and SHALL support an optional fi
 - **WHEN** logs include runtime configuration or errors
 - **THEN** secrets such as Telegram tokens, SMTP credentials, and internal API secrets are redacted
 
+## ADDED Requirements
+
 ### Requirement: API request logging uses the shared logger
 The API server SHALL use the shared structured logger configuration for request and error logging.
 
