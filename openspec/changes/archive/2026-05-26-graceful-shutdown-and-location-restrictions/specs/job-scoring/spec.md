@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Scoring uses structured geo/location restrictions
 When structured geo/location restriction signals are available on a normalized job, scoring SHALL use them for risk flags and penalties.

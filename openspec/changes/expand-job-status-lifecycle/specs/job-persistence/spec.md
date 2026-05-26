@@ -7,6 +7,10 @@ The system SHALL define a single authoritative job status vocabulary and persist
 - **WHEN** a user-controlled status is written for a job
 - **THEN** the persisted job status is one of `new`, `saved`, `discarded`, `applied`, `ignored`, `interviewing`, `offer`, or `ghosted`
 
+#### Scenario: Applied status is interpreted
+- **WHEN** a job status is `applied`
+- **THEN** the system treats it as meaning the user submitted a candidacy/application for the job, not as the Portuguese wording "aplicado"
+
 #### Scenario: System-controlled status is set
 - **WHEN** the pipeline marks a job as `rejected` or `notified`
 - **THEN** the persisted job status reflects that system-controlled state

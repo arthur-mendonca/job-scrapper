@@ -7,6 +7,7 @@ The current OpenSpec describes a broader job lifecycle than the API can currentl
 - Define and implement a single authoritative job status vocabulary shared by persistence, API, and operational tooling.
 - Expand the API status update endpoint to support additional workflow statuses while keeping pipeline-controlled statuses protected.
 - Ensure JobEvent history captures status changes consistently for operational auditing.
+- Clarify that the `applied` status means an application/candidacy was submitted for a job, not that the job was "applied"; localized UI labels should use "candidatado" or "candidatura enviada".
 
 ## Capabilities
 

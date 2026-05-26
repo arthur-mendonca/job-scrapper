@@ -31,6 +31,7 @@ This change makes the status lifecycle explicit and consistent across persistenc
 2. Split statuses into two classes: user-controlled and system-controlled.
    - User-controlled: `new`, `saved`, `discarded`, `applied`, `ignored`, `interviewing`, `offer`, `ghosted`.
    - System-controlled: `notified`, `rejected`.
+   - Semantics note: `applied` is a persisted technical status meaning "application submitted" or "candidate has applied to the job"; Portuguese UI/copy MUST use wording such as "candidatado" or "candidatura enviada", not "aplicado".
    - Rationale: the pipeline must be able to mark jobs as rejected/notified without API consumers overriding those meanings.
 
 3. Preserve JobEvent as the audit log of status transitions.

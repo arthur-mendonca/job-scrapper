@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Geo/location restriction extraction
 The normalizer SHALL extract explicit geo/location restriction signals from title, location, description, and requirements and expose them in a structured field on the normalized job.
