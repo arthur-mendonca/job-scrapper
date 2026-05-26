@@ -51,6 +51,7 @@ function buildJob(): Job {
     salaryMax: 7000,
     currency: 'USD',
     seniority: 'Senior',
+    geoRestrictions: ['latam-only'],
     description: 'Build APIs.',
     requirements: 'TypeScript and Node.js.',
     stackTags: ['TypeScript', 'Node.js'],

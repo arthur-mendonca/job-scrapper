@@ -59,6 +59,7 @@ export class Scheduler {
     this.running = true;
     const cyclePromise = this.collectionCycle
       .run()
+      .then(() => undefined)
       .catch((error) => {
         logger.error({ err: error }, 'Scheduled collection failed');
       })
