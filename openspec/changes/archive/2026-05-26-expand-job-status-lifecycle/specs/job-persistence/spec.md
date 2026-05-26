@@ -15,6 +15,8 @@ The system SHALL define a single authoritative job status vocabulary and persist
 - **WHEN** the pipeline marks a job as `rejected` or `notified`
 - **THEN** the persisted job status reflects that system-controlled state
 
+## ADDED Requirements
+
 ### Requirement: User-controlled vs system-controlled statuses
 The API SHALL allow users to update only user-controlled statuses and MUST NOT allow API consumers to set system-controlled statuses directly.
 

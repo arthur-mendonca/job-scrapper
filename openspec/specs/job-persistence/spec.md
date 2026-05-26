@@ -39,9 +39,35 @@ The data model SHALL provide indexes or equivalent query support for deduplicati
 - **THEN** the persistence layer can query by score and recency without scanning only unstructured payloads
 
 ### Requirement: Job status lifecycle
-The system SHALL support job statuses such as `new`, `notified`, `saved`, `applied`, `ignored`, `rejected`, `interviewing`, `offer`, and `ghosted`.
+The system SHALL define a single authoritative job status vocabulary and persist job status using only the allowed values.
 
-#### Scenario: User marks a job as applied
-- **WHEN** a job status changes to `applied`
-- **THEN** the persisted job reflects the new lifecycle state for reports and future workflows
+#### Scenario: Allowed status is written
+- **WHEN** a user-controlled status is written for a job
+- **THEN** the persisted job status is one of `new`, `saved`, `discarded`, `applied`, `ignored`, `interviewing`, `offer`, or `ghosted`
+
+#### Scenario: Applied status is interpreted
+- **WHEN** a job status is `applied`
+- **THEN** the system treats it as meaning the user submitted a candidacy/application for the job, not as the Portuguese wording "aplicado"
+
+#### Scenario: System-controlled status is set
+- **WHEN** the pipeline marks a job as `rejected` or `notified`
+- **THEN** the persisted job status reflects that system-controlled state
+
+### Requirement: User-controlled vs system-controlled statuses
+The API SHALL allow users to update only user-controlled statuses and MUST NOT allow API consumers to set system-controlled statuses directly.
+
+#### Scenario: API attempts to set rejected
+- **WHEN** an API consumer attempts to set a job status to `rejected`
+- **THEN** the request is rejected without modifying the job
+
+#### Scenario: API attempts to set notified
+- **WHEN** an API consumer attempts to set a job status to `notified`
+- **THEN** the request is rejected without modifying the job
+
+### Requirement: Status change events
+When a job status changes, the system SHALL record an event in job history so operational tooling can audit workflow progress.
+
+#### Scenario: Status changes via API
+- **WHEN** a job status changes via the API
+- **THEN** a JobEvent records the previous and new status values
 

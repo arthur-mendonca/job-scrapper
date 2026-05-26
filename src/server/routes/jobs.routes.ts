@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { jobSorts, JobRepository } from '../../persistence/job.repository.js';
 import { notFound } from '../errors.js';
 import { toJobDetailDto, toJobListItemDto } from '../dto.js';
+import { USER_CONTROLLED_STATUSES } from '../job-status.js';
 
 const optionalString = z.preprocess(
   (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
@@ -26,10 +27,11 @@ const idParamsSchema = z.object({
   id: z.string().min(1)
 });
 
-export const writableJobStatuses = ['new', 'saved', 'discarded', 'applied'] as const;
+/** User-controlled statuses accepted by the API update endpoint. */
+export const writableJobStatuses = USER_CONTROLLED_STATUSES;
 
 const updateStatusBodySchema = z.object({
-  status: z.enum(writableJobStatuses)
+  status: z.enum(USER_CONTROLLED_STATUSES)
 });
 
 export async function registerJobsRoutes(app: FastifyInstance): Promise<void> {

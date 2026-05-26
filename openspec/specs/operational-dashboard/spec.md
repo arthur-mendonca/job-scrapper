@@ -25,11 +25,15 @@ The post-MVP dashboard SHALL provide a job detail view with source links, normal
 - **THEN** the page shows enough information to decide whether to save, discard, apply, or request AI analysis
 
 ### Requirement: Job status actions
-The post-MVP dashboard SHALL support operational actions such as save, discard, mark applied, open original link, and select jobs for AI review.
+Operational tooling SHALL support workflow statuses beyond the MVP curation set so the user can track application progress over time.
 
-#### Scenario: User marks job as discarded
-- **WHEN** the user discards a job from the dashboard
-- **THEN** the persisted status changes so the job no longer appears in active review lists by default
+#### Scenario: User tracks application workflow
+- **WHEN** the user updates job workflow state
+- **THEN** they can set `saved`, `discarded`, `applied`, `ignored`, `interviewing`, `offer`, and `ghosted` as appropriate
+
+#### Scenario: Applied status is displayed in Portuguese
+- **WHEN** operational tooling displays the `applied` status in Portuguese
+- **THEN** it labels the status as "candidatado" or "candidatura enviada" rather than "aplicado"
 
 ### Requirement: Source management
 The post-MVP dashboard SHALL allow the user to view and manage source configuration such as enabled state, source type, access mode, base URL, source trust score, rate limit, latest execution, useful job counts, errors, and average quality.
