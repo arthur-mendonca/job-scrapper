@@ -19,6 +19,7 @@ export function toJobListItemDto(job: Job) {
     currency: job.currency,
     seniority: job.seniority,
     stackTags: job.stackTags,
+    geoRestrictions: job.geoRestrictions,
     score: job.score,
     sourceTrustScore: job.sourceTrustScore,
     status: job.status,

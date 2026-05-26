@@ -16,6 +16,7 @@ export interface NormalizedJob {
   companyName: string;
   location: string | null;
   remoteType: RemoteType;
+  geoRestrictions: string[];
   salaryMin: number | null;
   salaryMax: number | null;
   currency: string | null;

@@ -56,6 +56,7 @@ const envSchema = z.object({
     .string()
     .default("false")
     .transform((value) => value.toLowerCase() === "true"),
+  WORKER_SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().min(0).default(15000),
 });
 
 export type Env = z.infer<typeof envSchema>;

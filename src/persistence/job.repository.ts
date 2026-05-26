@@ -256,6 +256,7 @@ function toJobData(job: NormalizedJob, score: JobScore, status: string): Prisma.
     description: job.description,
     requirements: job.requirements,
     stackTags: job.stackTags,
+    geoRestrictions: job.geoRestrictions,
     postedAt: job.postedAt,
     lastSeenAt: new Date(),
     score: score.score,

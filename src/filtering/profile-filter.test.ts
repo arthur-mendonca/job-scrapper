@@ -62,6 +62,7 @@ function buildJob(overrides: Partial<NormalizedJob> = {}): NormalizedJob {
     companyName: 'ExampleCo',
     location: 'Remote LATAM',
     remoteType: 'remote',
+    geoRestrictions: [],
     salaryMin: null,
     salaryMax: null,
     currency: null,

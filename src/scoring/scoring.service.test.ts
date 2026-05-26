@@ -33,6 +33,21 @@ describe('scoreJob', () => {
     expect(score.riskFlags).toContain('low-trust-source');
     expect(score.riskFlags).toContain('indirect-source');
   });
+
+  it('prefers structured restriction flags when available', () => {
+    const score = scoreJob(buildJob({ geoRestrictions: ['us-only'] }));
+    expect(score.riskFlags).toContain('us-only');
+  });
+
+  it('falls back to text detection when structured restrictions are absent', () => {
+    const score = scoreJob(
+      buildJob({
+        geoRestrictions: [],
+        description: 'Remote role, but US only candidates.'
+      })
+    );
+    expect(score.riskFlags).toContain('us-only');
+  });
 });
 
 function buildJob(overrides: Partial<NormalizedJob> = {}): NormalizedJob {
@@ -50,6 +65,7 @@ function buildJob(overrides: Partial<NormalizedJob> = {}): NormalizedJob {
     companyName: 'ExampleCo',
     location: 'Remote LATAM',
     remoteType: 'remote',
+    geoRestrictions: [],
     salaryMin: 5000,
     salaryMax: 7000,
     currency: 'USD',

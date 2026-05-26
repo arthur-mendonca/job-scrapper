@@ -1,37 +1,37 @@
-import type { RawJobItem } from '../collectors/collector.types.js';
-import { sha256 } from '../utils/hashing.js';
-import { canonicalizeUrl } from '../utils/url.js';
-import { compactWhitespace, normalizeKey, uniq } from '../utils/text.js';
-import type { NormalizedJob, RemoteType } from './normalizer.types.js';
+import type { RawJobItem } from "../collectors/collector.types.js";
+import { sha256 } from "../utils/hashing.js";
+import { canonicalizeUrl } from "../utils/url.js";
+import { compactWhitespace, normalizeKey, uniq } from "../utils/text.js";
+import type { NormalizedJob, RemoteType } from "./normalizer.types.js";
 
 const stackPatterns: Array<[string, RegExp]> = [
-  ['TypeScript', /\btypescript\b|\bts\b/i],
-  ['JavaScript', /\bjavascript\b|\bvanilla js\b/i],
-  ['Node.js', /\bnode\.?js\b|\bnode\b/i],
-  ['NestJS', /\bnest\.?js\b|\bnestjs\b/i],
-  ['React', /\breact\b|\breact\.js\b/i],
-  ['Next.js', /\bnext\.?js\b|\bnextjs\b/i],
-  ['AWS', /\baws\b|amazon web services/i],
-  ['Docker', /\bdocker\b/i],
-  ['CI/CD', /\bci\/cd\b|\bcontinuous integration\b|\bcontinuous delivery\b/i],
-  ['PostgreSQL', /\bpostgresql\b|\bpostgres\b/i],
-  ['REST APIs', /\brest apis?\b|\brestful\b|\bapi integrations?\b/i],
-  ['AI', /\bai\b|artificial intelligence/i],
-  ['LLM', /\bllm\b|large language model|openai|claude|rag\b/i],
-  ['automation', /\bautomation\b|automacao|automate|workflow/i],
-  ['Python', /\bpython\b/i],
-  ['Java', /\bjava\b|\bkotlin\b/i],
-  ['.NET', /\.net\b|dotnet/i],
-  ['C#', /\bc#\b|c sharp/i],
-  ['PHP', /\bphp\b|laravel/i],
-  ['Ruby', /\bruby\b|rails\b/i],
-  ['mobile-only', /\bios\b|\bandroid\b|react native|flutter/i],
-  ['WordPress-only', /\bwordpress\b/i]
+  ["TypeScript", /\btypescript\b|\bts\b/i],
+  ["JavaScript", /\bjavascript\b|\bvanilla js\b/i],
+  ["Node.js", /\bnode\.?js\b|\bnode\b/i],
+  ["NestJS", /\bnest\.?js\b|\bnestjs\b/i],
+  ["React", /\breact\b|\breact\.js\b/i],
+  ["Next.js", /\bnext\.?js\b|\bnextjs\b/i],
+  ["AWS", /\baws\b|amazon web services/i],
+  ["Docker", /\bdocker\b/i],
+  ["CI/CD", /\bci\/cd\b|\bcontinuous integration\b|\bcontinuous delivery\b/i],
+  ["PostgreSQL", /\bpostgresql\b|\bpostgres\b/i],
+  ["REST APIs", /\brest apis?\b|\brestful\b|\bapi integrations?\b/i],
+  ["AI", /\bai\b|artificial intelligence/i],
+  ["LLM", /\bllm\b|large language model|openai|claude|rag\b/i],
+  ["automation", /\bautomation\b|automacao|automate|workflow/i],
+  ["Python", /\bpython\b/i],
+  ["Java", /\bjava\b|\bkotlin\b/i],
+  [".NET", /\.net\b|dotnet/i],
+  ["C#", /\bc#\b|c sharp/i],
+  ["PHP", /\bphp\b|laravel/i],
+  ["Ruby", /\bruby\b|rails\b/i],
+  ["mobile-only", /\bios\b|\bandroid\b|react native|flutter/i],
+  ["WordPress-only", /\bwordpress\b/i],
 ];
 
 export function normalizeJob(raw: RawJobItem): NormalizedJob | null {
   const title = compactWhitespace(raw.title);
-  const companyName = compactWhitespace(raw.companyName) || 'Unknown Company';
+  const companyName = compactWhitespace(raw.companyName) || "Unknown Company";
   const sourceUrl = compactWhitespace(raw.sourceUrl);
 
   if (!title || !sourceUrl) {
@@ -41,19 +41,36 @@ export function normalizeJob(raw: RawJobItem): NormalizedJob | null {
   const description = compactWhitespace(raw.description);
   const requirements = compactWhitespace(raw.requirements);
   const location = compactWhitespace(raw.location);
-  const salary = parseSalary(raw.salaryText ?? `${description} ${requirements}`);
+  const salary = parseSalary(
+    raw.salaryText ?? `${description} ${requirements}`,
+  );
   const normalizedTitle = normalizeTitle(title);
   const canonicalUrl = canonicalizeUrl(sourceUrl);
   const stackTags = detectStackTags(`${title} ${description} ${requirements}`);
   const contentHash = sha256(
-    normalizeKey(`${normalizedTitle} ${companyName} ${description || requirements || canonicalUrl}`)
+    normalizeKey(
+      `${normalizedTitle} ${companyName} ${description || requirements || canonicalUrl}`,
+    ),
   );
+  const remoteType = detectRemoteType(
+    `${title} ${location} ${description} ${requirements}`,
+  );
+  const geoRestrictions = extractGeoRestrictions({
+    title,
+    location,
+    description,
+    requirements,
+    remoteType,
+  });
 
   return {
     source: raw.source,
     sourceId: raw.sourceId,
     collector: compactWhitespace(raw.collector) || raw.source,
-    discoveredVia: compactWhitespace(raw.discoveredVia) || compactWhitespace(raw.collector) || raw.source,
+    discoveredVia:
+      compactWhitespace(raw.discoveredVia) ||
+      compactWhitespace(raw.collector) ||
+      raw.source,
     sourceUrl,
     canonicalUrl,
     sourceTrustScore: raw.sourceTrustScore,
@@ -62,7 +79,8 @@ export function normalizeJob(raw: RawJobItem): NormalizedJob | null {
     normalizedTitle,
     companyName,
     location: location || null,
-    remoteType: detectRemoteType(`${title} ${location} ${description} ${requirements}`),
+    remoteType,
+    geoRestrictions,
     salaryMin: salary.salaryMin,
     salaryMax: salary.salaryMax,
     currency: salary.currency,
@@ -71,38 +89,53 @@ export function normalizeJob(raw: RawJobItem): NormalizedJob | null {
     requirements: requirements || null,
     stackTags,
     postedAt: raw.postedAt ?? null,
-    contentHash
+    contentHash,
   };
 }
 
 export function normalizeTitle(title: string): string {
   return normalizeKey(title)
-    .replace(/\b(remote|latam|worldwide|contract|full time|part time)\b/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(/\b(remote|latam|worldwide|contract|full time|part time)\b/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
 export function detectStackTags(text: string): string[] {
-  return uniq(stackPatterns.filter(([, pattern]) => pattern.test(text)).map(([tag]) => tag));
+  return uniq(
+    stackPatterns
+      .filter(([, pattern]) => pattern.test(text))
+      .map(([tag]) => tag),
+  );
 }
 
 export function detectRemoteType(text: string): RemoteType {
   const value = normalizeKey(text);
-  if (/\bhybrid\b|\bhibrido\b|\bhibrida\b/.test(value)) return 'hybrid';
-  if (/\bonsite\b|\bon site\b|\bin office\b|\bpresencial\b/.test(value)) return 'onsite';
-  if (/\bremote\b|\bremoto\b|\bworldwide\b|\banywhere\b|\blatam\b|\bhome office\b/.test(value)) return 'remote';
-  return 'unknown';
+  if (/\bhybrid\b|\bhibrido\b|\bhibrida\b/.test(value)) return "hybrid";
+  if (/\bonsite\b|\bon site\b|\bin office\b|\bpresencial\b/.test(value))
+    return "onsite";
+  if (
+    /\bremote\b|\bremoto\b|\bworldwide\b|\banywhere\b|\blatam\b|\bhome office\b/.test(
+      value,
+    )
+  )
+    return "remote";
+  return "unknown";
 }
 
 export function detectSeniority(text: string): string | null {
   const value = normalizeKey(text);
-  if (/\bintern\b|\bestagio\b|\binternship\b/.test(value)) return 'Intern';
-  if (/\bjunior\b|\bjr\b|\bentry level\b/.test(value)) return 'Junior';
-  if (/\bmid\b|\bmid level\b|\bintermediate\b|\bintermediario\b|\bpleno\b/.test(value)) return 'Mid-level';
-  if (/\bsenior\b|\bsr\b/.test(value)) return 'Senior';
-  if (/\bstaff\b/.test(value)) return 'Staff';
-  if (/\bprincipal\b/.test(value)) return 'Principal';
-  if (/\blead\b|\btech lead\b/.test(value)) return 'Lead';
+  if (/\bintern\b|\bestagio\b|\binternship\b/.test(value)) return "Intern";
+  if (/\bjunior\b|\bjr\b|\bentry level\b/.test(value)) return "Junior";
+  if (
+    /\bmid\b|\bmid level\b|\bintermediate\b|\bintermediario\b|\bpleno\b/.test(
+      value,
+    )
+  )
+    return "Mid-level";
+  if (/\bsenior\b|\bsr\b/.test(value)) return "Senior";
+  if (/\bstaff\b/.test(value)) return "Staff";
+  if (/\bprincipal\b/.test(value)) return "Principal";
+  if (/\blead\b|\btech lead\b/.test(value)) return "Lead";
   return null;
 }
 
@@ -115,11 +148,15 @@ interface SalaryParseResult {
 export function parseSalary(text: string): SalaryParseResult {
   const value = compactWhitespace(text);
   const currency = detectCurrency(value);
-  const matches = [...value.matchAll(/(?:\$|USD|US\$|EUR|€|BRL|R\$)?\s*(\d{2,6})(?:\s?k)?/gi)]
+  const matches = [
+    ...value.matchAll(/(?:\$|USD|US\$|EUR|€|BRL|R\$)?\s*(\d{2,6})(?:\s?k)?/gi),
+  ]
     .map((match) => {
-      const rawNumber = Number.parseInt(match[1] ?? '', 10);
+      const rawNumber = Number.parseInt(match[1] ?? "", 10);
       if (!Number.isFinite(rawNumber)) return null;
-      return /k\b/i.test(match[0]) && rawNumber < 1000 ? rawNumber * 1000 : rawNumber;
+      return /k\b/i.test(match[0]) && rawNumber < 1000
+        ? rawNumber * 1000
+        : rawNumber;
     })
     .filter((number): number is number => Boolean(number && number >= 1000));
 
@@ -130,14 +167,115 @@ export function parseSalary(text: string): SalaryParseResult {
   return {
     salaryMin: Math.min(...matches),
     salaryMax: Math.max(...matches),
-    currency
+    currency,
   };
 }
 
 function detectCurrency(text: string): string | null {
-  if (/\bUSD\b|US\$|\$/.test(text)) return 'USD';
-  if (/\bEUR\b|€/.test(text)) return 'EUR';
-  if (/\bBRL\b|R\$/.test(text)) return 'BRL';
-  if (/\bGBP\b|£/.test(text)) return 'GBP';
+  if (/\bUSD\b|US\$|\$/.test(text)) return "USD";
+  if (/\bEUR\b|€/.test(text)) return "EUR";
+  if (/\bBRL\b|R\$/.test(text)) return "BRL";
+  if (/\bGBP\b|£/.test(text)) return "GBP";
+  return null;
+}
+
+const countryAliases: Array<[RegExp, string]> = [
+  [/\bbrazil\b|\bbrasil\b/, "Brazil"],
+  [/\bargentina\b/, "Argentina"],
+  [/\bchile\b/, "Chile"],
+  [/\bcolombia\b/, "Colombia"],
+  [/\bmexico\b|\bm[eé]xico\b/, "Mexico"],
+  [/\bperu\b|\bperú\b/, "Peru"],
+  [/\buruguay\b/, "Uruguay"],
+  [/\bcanada\b/, "Canada"],
+  [/\bunited kingdom\b|\buk\b|\bu\.k\.\b|\bbritain\b/, "United Kingdom"],
+  [/\bireland\b/, "Ireland"],
+  [/\bportugal\b/, "Portugal"],
+  [/\bspain\b|\bespa[nñ]a\b/, "Spain"],
+  [/\bfrance\b/, "France"],
+  [/\bgermany\b|\bdeutschland\b/, "Germany"],
+  [/\bnetherlands\b|\bholland\b/, "Netherlands"],
+  [/\bsweden\b/, "Sweden"],
+  [/\bnorway\b/, "Norway"],
+  [/\bdenmark\b/, "Denmark"],
+  [/\bfinland\b/, "Finland"],
+  [/\bpoland\b/, "Poland"],
+  [/\bitaly\b|\bitalia\b/, "Italy"],
+  [/\bswitzerland\b/, "Switzerland"],
+  [/\baustria\b/, "Austria"],
+];
+
+function extractGeoRestrictions(input: {
+  title: string;
+  location: string;
+  description: string;
+  requirements: string;
+  remoteType: RemoteType;
+}): string[] {
+  const text = normalizeKey(
+    `${input.title} ${input.location} ${input.description} ${input.requirements}`,
+  );
+  const locationText = normalizeKey(input.location);
+  const restrictions = new Set<string>();
+
+  if (
+    /\b(remote|remoto)\b/.test(locationText) &&
+    /\blatam\b|\blatin america\b/.test(locationText)
+  ) {
+    restrictions.add("latam-only");
+  } else if (
+    /\blatam\b|\blatin america\b/.test(text) &&
+    /\bonly\b/.test(text)
+  ) {
+    restrictions.add("latam-only");
+  }
+
+  if (
+    /\bus only\b|\busa only\b|\bunited states only\b/.test(text) ||
+    /\bonly candidates in (the )?u\.?s\.?a?\b/.test(text) ||
+    /\bmust be based in (the )?u\.?s\.?a?\b/.test(text) ||
+    /\bu\.?s\.?\s*residents?\s*only\b/.test(text)
+  ) {
+    restrictions.add("us-only");
+  }
+
+  if (
+    /\beu only\b|\beurope only\b|\beuropean union only\b/.test(text) ||
+    /\bonly candidates in (the )?(eu|europe)\b/.test(text) ||
+    /\bmust be based in (the )?(eu|europe)\b/.test(text)
+  ) {
+    restrictions.add("europe-only");
+  }
+
+  const country = detectCountryOnly(text);
+  if (country) {
+    restrictions.add(`country-only:${country}`);
+  }
+
+  return [...restrictions];
+}
+
+function detectCountryOnly(text: string): string | null {
+  if (
+    !/\bonly\b|\bbased in\b|\blocated in\b|\bmust be in\b|\bmust be based in\b/.test(
+      text,
+    )
+  )
+    return null;
+
+  for (const [pattern, canonical] of countryAliases) {
+    if (!pattern.test(text)) continue;
+
+    if (
+      new RegExp(
+        `(?:only|based in|located in|must be in|must be based in)\\s+(?:the\\s+)?(?:remote\\s+)?(?:in\\s+)?${pattern.source}`,
+        "i",
+      ).test(text) ||
+      new RegExp(`${pattern.source}\\s+only\\b`, "i").test(text)
+    ) {
+      return canonical;
+    }
+  }
+
   return null;
 }

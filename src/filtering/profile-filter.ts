@@ -110,7 +110,10 @@ export function filterJobForTargetProfile(job: NormalizedJob): ProfileFilterResu
     return { accepted: false, reason: `${job.remoteType} role` };
   }
 
-  if (/\bus only\b|\busa only\b|only candidates in the u\.?s\.?|must be based in the u\.?s\.?/.test(text)) {
+  if (
+    job.geoRestrictions.includes('us-only') ||
+    /\bus only\b|\busa only\b|only candidates in the u\.?s\.?|must be based in the u\.?s\.?/.test(text)
+  ) {
     return { accepted: false, reason: 'us-only role' };
   }
 

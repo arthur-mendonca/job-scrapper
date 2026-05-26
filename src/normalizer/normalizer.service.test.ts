@@ -33,5 +33,26 @@ describe('normalizer detection', () => {
     expect(normalized?.discoveredVia).toBe('Email Alerts');
     expect(normalized?.canonicalUrl).toBe('https://example.com/job');
     expect(normalized?.stackTags).toContain('Node.js');
+    expect(normalized?.geoRestrictions).toContain('latam-only');
+  });
+
+  it.each([
+    ['us-only', 'Remote - US Only', 'We are remote but US only.'],
+    ['europe-only', 'Remote - EU only', 'Remote, EU only candidates.'],
+    ['country-only:Brazil', 'Remote - Brazil only', 'Remote in Brazil only.']
+  ])('extracts geo restriction %s', (expected, location, description) => {
+    const normalized = normalizeJob({
+      source: 'Email Alerts',
+      sourceId: 'email-alerts',
+      sourceUrl: 'https://example.com/job',
+      sourceTrustScore: 50,
+      sourceAccessMode: 'email',
+      title: 'Backend Engineer',
+      companyName: 'ExampleCo',
+      location,
+      description
+    } satisfies RawJobItem);
+
+    expect(normalized?.geoRestrictions).toContain(expected);
   });
 });

@@ -27,6 +27,7 @@ export function scoreJob(job: NormalizedJob): JobScore {
       job.requirements ?? ''
     } ${job.stackTags.join(' ')}`
   ).toLowerCase();
+  const hasStructuredRestrictions = job.geoRestrictions.length > 0;
 
   let technicalScore = 35;
 
@@ -61,12 +62,36 @@ export function scoreJob(job: NormalizedJob): JobScore {
   if (job.remoteType === 'hybrid') subtract(12, 'hybrid');
   if (job.remoteType === 'onsite') subtract(25, 'onsite');
 
-  if (hasAny(text, [/\blatam\b/, /latin america/, /\bamericas\b/, /worldwide/, /anywhere/])) {
-    add(8, 'LATAM/Americas/worldwide friendly');
-  }
+  if (hasStructuredRestrictions) {
+    if (job.geoRestrictions.includes('latam-only')) {
+      add(8, 'LATAM restriction compatible');
+    }
 
-  if (hasAny(text, [/\bus only\b/, /\busa only\b/, /only candidates in the u\.?s\.?/, /must be based in the u\.?s\.?/])) {
-    subtract(20, 'us-only');
+    if (job.geoRestrictions.includes('us-only')) {
+      subtract(20, 'us-only');
+    }
+
+    if (job.geoRestrictions.includes('europe-only')) {
+      subtract(18, 'europe-only');
+    }
+
+    for (const restriction of job.geoRestrictions) {
+      if (restriction.startsWith('country-only:')) {
+        subtract(18, restriction);
+      }
+    }
+  } else {
+    if (hasAny(text, [/\blatam\b/, /latin america/, /\bamericas\b/, /worldwide/, /anywhere/])) {
+      add(8, 'LATAM/Americas/worldwide friendly');
+    }
+
+    if (hasAny(text, [/\beu only\b/, /\beurope only\b/, /\beuropean union only\b/])) {
+      subtract(18, 'europe-only');
+    }
+
+    if (hasAny(text, [/\bus only\b/, /\busa only\b/, /only candidates in the u\.?s\.?/, /must be based in the u\.?s\.?/])) {
+      subtract(20, 'us-only');
+    }
   }
 
   if (job.currency === 'USD' || /\busd\b|\$/.test(text)) add(5, 'USD compensation signal');
@@ -124,7 +149,13 @@ export function scoreJob(job: NormalizedJob): JobScore {
 }
 
 function recommendedAction(score: number, riskFlags: string[]): string {
-  if (riskFlags.includes('us-only') || riskFlags.includes('staff-principal-only') || riskFlags.includes('onsite')) {
+  if (
+    riskFlags.includes('us-only') ||
+    riskFlags.includes('europe-only') ||
+    riskFlags.some((flag) => flag.startsWith('country-only:')) ||
+    riskFlags.includes('staff-principal-only') ||
+    riskFlags.includes('onsite')
+  ) {
     return 'Ignore due to location or seniority mismatch.';
   }
   if (riskFlags.includes('suspicious-source') || riskFlags.includes('low-trust-source')) {

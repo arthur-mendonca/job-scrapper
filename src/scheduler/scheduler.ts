@@ -6,6 +6,8 @@ import type { CollectionCycle } from '../pipeline/collection-cycle.js';
 export class Scheduler {
   private running = false;
   private task: cron.ScheduledTask | null = null;
+  private inFlight: Promise<void> | null = null;
+  private stopping = false;
 
   constructor(private readonly collectionCycle: CollectionCycle) {}
 
@@ -17,36 +19,55 @@ export class Scheduler {
     logger.info({ cron: env.COLLECT_CRON }, 'Scheduler starting');
 
     this.task = cron.schedule(env.COLLECT_CRON, () => {
-      void this.runScheduledCycle();
+      void this.runOnce();
     });
-
-    this.registerShutdownHandlers();
   }
 
-  private async runScheduledCycle(): Promise<void> {
+  stopScheduling(): void {
+    this.stopping = true;
+    this.task?.stop();
+  }
+
+  async awaitInFlight(timeoutMs: number): Promise<'idle' | 'completed' | 'timeout'> {
+    if (!this.inFlight) return 'idle';
+
+    const timeout = Math.max(0, Math.floor(timeoutMs));
+    if (timeout === 0) {
+      await this.inFlight;
+      return 'completed';
+    }
+
+    const result = await Promise.race([
+      this.inFlight.then(() => 'completed' as const),
+      new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), timeout))
+    ]);
+
+    return result;
+  }
+
+  async runOnce(): Promise<void> {
+    if (this.stopping) {
+      logger.info('Skipping scheduled collection because scheduler is stopping');
+      return;
+    }
+
     if (this.running) {
       logger.warn('Skipping scheduled collection because previous cycle is still running');
       return;
     }
 
     this.running = true;
-    try {
-      await this.collectionCycle.run();
-    } catch (error) {
-      logger.error({ err: error }, 'Scheduled collection failed');
-    } finally {
-      this.running = false;
-    }
-  }
+    const cyclePromise = this.collectionCycle
+      .run()
+      .catch((error) => {
+        logger.error({ err: error }, 'Scheduled collection failed');
+      })
+      .finally(() => {
+        this.running = false;
+        this.inFlight = null;
+      });
 
-  private registerShutdownHandlers(): void {
-    const shutdown = (signal: NodeJS.Signals): void => {
-      logger.info({ signal }, 'Scheduler shutting down');
-      this.task?.stop();
-      process.exit(0);
-    };
-
-    process.once('SIGINT', shutdown);
-    process.once('SIGTERM', shutdown);
+    this.inFlight = cyclePromise;
+    await cyclePromise;
   }
 }

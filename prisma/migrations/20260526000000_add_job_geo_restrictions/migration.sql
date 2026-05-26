@@ -1,0 +1,1 @@
+ALTER TABLE "Job" ADD COLUMN "geoRestrictions" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

@@ -27,6 +27,7 @@ model Job {
   description       String?
   requirements      String?
   stackTags         String[]  @default([])
+  geoRestrictions   String[]  @default([])
   postedAt          DateTime?
   discoveredAt      DateTime  @default(now())
   lastSeenAt        DateTime  @default(now())
