@@ -21,6 +21,10 @@ env:
   FRONTEND_REPOSITORY: ${{ vars.FRONTEND_REPOSITORY }}
   FRONTEND_BASE_BRANCH: ${{ vars.FRONTEND_BASE_BRANCH || 'main' }}
   FRONTEND_OPENAPI_PATH: ${{ vars.FRONTEND_OPENAPI_PATH || 'openapi.json' }}
+  NODE_ENV: test
+  DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+  API_INTERNAL_SECRET: dummy_secret_para_ci
+  API_CORS_ORIGIN: "*"
 
 jobs:
   sync-openapi:
