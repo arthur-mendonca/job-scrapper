@@ -11,11 +11,15 @@ The system SHALL be a personal job intelligence backend that turns dispersed job
 - **THEN** it preserves the core mission of reducing manual job search effort through collection, normalization, deduplication, scoring, persistence, and notification
 
 ### Requirement: Backend-first architecture with API surface
-The system SHALL remain backend-first and worker-oriented while exposing backend API capabilities for operational consumers such as reports, dashboards, source management, and job curation.
+The system SHALL remain backend-first and worker-oriented while exposing backend API capabilities and a generated API contract for operational consumers such as reports, dashboards, source management, job curation, and frontend code generation.
 
 #### Scenario: Operational UI is introduced
 - **WHEN** a frontend or dashboard is added in a later change
 - **THEN** it uses the backend API and persisted pipeline data rather than replacing the collection pipeline or moving business logic into the browser
+
+#### Scenario: API client types are generated
+- **WHEN** a frontend generation tool consumes the backend API contract
+- **THEN** it uses the generated OpenAPI document from the backend rather than manually redefining backend route models in the frontend
 
 ### Requirement: MVP non-goals and anti-abuse constraints
 The system MUST NOT include NestJS for the MVP, GitHub Actions scheduling, authenticated LinkedIn scraping, cookie-based scraping, private job-board APIs, CAPTCHA bypass, stealth browsing, LinkedIn login automation, or scraping strategies requiring user credentials or anti-bot evasion.
@@ -122,4 +126,3 @@ The API server SHALL use the shared structured logger configuration for request 
 #### Scenario: API request is handled
 - **WHEN** the API handles a request
 - **THEN** request and error logs follow the shared structured logging rules and do not expose secrets
-

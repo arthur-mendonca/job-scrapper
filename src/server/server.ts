@@ -1,9 +1,18 @@
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
 import Fastify, { type FastifyInstance } from "fastify";
+import {
+  jsonSchemaTransform,
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from "fastify-type-provider-zod";
 import { env } from "../config/env.js";
 import { fastifyLoggerOptions, logger } from "../logger/logger.js";
 import { prisma } from "../persistence/prisma.js";
+import { healthResponseSchema } from "./api-schemas.js";
 import { ApiError, formatApiError } from "./errors.js";
 import { registerDashboardRoutes } from "./routes/dashboard.routes.js";
 import { registerEventsRoutes } from "./routes/events.routes.js";
@@ -14,8 +23,39 @@ import { registerSourcesRoutes } from "./routes/sources.routes.js";
 export async function buildServer(): Promise<FastifyInstance> {
   const app = Fastify({ logger: fastifyLoggerOptions });
 
+  // Configure Zod validator and serializer compilers
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+
   await app.register(cors, {
     origin: parseCorsOrigin(env.API_CORS_ORIGIN),
+  });
+
+  // Register Swagger before routes so app.swagger() generates the full document
+  await app.register(swagger, {
+    openapi: {
+      openapi: "3.1.0",
+      info: {
+        title: "Job Intelligence Pipeline API",
+        description:
+          "Internal API for job collection pipeline management, dashboard metrics, source configuration, and event tracking.",
+        version: "0.1.0",
+      },
+      tags: [
+        { name: "Health", description: "Service health checks" },
+        { name: "Dashboard", description: "Aggregated dashboard metrics" },
+        { name: "Jobs", description: "Job listing, detail, and status management" },
+        { name: "Sources", description: "Job source configuration and statistics" },
+        { name: "Events", description: "Job lifecycle event log" },
+        { name: "Settings", description: "Runtime configuration settings" },
+      ],
+    },
+    transform: jsonSchemaTransform,
+  });
+
+  // Swagger UI for local/internal inspection only — not the frontend contract source
+  await app.register(swaggerUi, {
+    routePrefix: "/docs",
   });
 
   app.addHook("onRequest", async (request) => {
@@ -58,26 +98,43 @@ export async function buildServer(): Promise<FastifyInstance> {
       timeWindow: "1 minute",
     });
 
-    healthApp.get("/health", async (_request, reply) => {
-      try {
-        await prisma.$queryRaw`SELECT 1`;
-        return {
-          status: "ok",
-          database: "ok",
-          uptimeSeconds: Math.round(process.uptime()),
-          timestamp: new Date().toISOString(),
-        };
-      } catch (error) {
-        logger.error({ err: error }, "Health check failed");
-        reply.status(503);
-        return {
-          status: "error",
-          database: "unavailable",
-          uptimeSeconds: Math.round(process.uptime()),
-          timestamp: new Date().toISOString(),
-        };
+    const typedHealthApp = healthApp.withTypeProvider<ZodTypeProvider>();
+
+    typedHealthApp.get(
+      "/health",
+      {
+        schema: {
+          operationId: "getHealth",
+          tags: ["Health"],
+          summary: "Check service health",
+          description: "Returns the current health status of the API and database connection.",
+          response: {
+            200: healthResponseSchema,
+            503: healthResponseSchema,
+          },
+        },
+      },
+      async (_request, reply) => {
+        try {
+          await prisma.$queryRaw`SELECT 1`;
+          return {
+            status: "ok" as const,
+            database: "ok" as const,
+            uptimeSeconds: Math.round(process.uptime()),
+            timestamp: new Date().toISOString(),
+          };
+        } catch (error) {
+          logger.error({ err: error }, "Health check failed");
+          reply.status(503);
+          return {
+            status: "error" as const,
+            database: "unavailable" as const,
+            uptimeSeconds: Math.round(process.uptime()),
+            timestamp: new Date().toISOString(),
+          };
+        }
       }
-    });
+    );
   });
 
   await app.register(registerDashboardRoutes, { prefix: "/api" });

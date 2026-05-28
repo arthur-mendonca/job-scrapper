@@ -1,0 +1,1512 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Job Intelligence Pipeline API",
+    "description": "Internal API for job collection pipeline management, dashboard metrics, source configuration, and event tracking.",
+    "version": "0.1.0"
+  },
+  "components": {
+    "schemas": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Check service health",
+        "tags": [
+          "Health"
+        ],
+        "description": "Returns the current health status of the API and database connection.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "error"
+                      ]
+                    },
+                    "database": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "unavailable"
+                      ]
+                    },
+                    "uptimeSeconds": {
+                      "type": "integer"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "database",
+                    "uptimeSeconds",
+                    "timestamp"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "error"
+                      ]
+                    },
+                    "database": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "unavailable"
+                      ]
+                    },
+                    "uptimeSeconds": {
+                      "type": "integer"
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "database",
+                    "uptimeSeconds",
+                    "timestamp"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "operationId": "getDashboard",
+        "summary": "Get dashboard metrics",
+        "tags": [
+          "Dashboard"
+        ],
+        "description": "Returns aggregated metrics for the dashboard including job counts, source stats, and recent collection runs.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "newJobsToday": {
+                      "type": "integer"
+                    },
+                    "rediscoveredJobsToday": {
+                      "type": "integer"
+                    },
+                    "highScoreJobs": {
+                      "type": "integer"
+                    },
+                    "averageScore": {
+                      "type": "number"
+                    },
+                    "notificationScoreThreshold": {
+                      "type": "integer"
+                    },
+                    "jobsByStatus": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "status",
+                          "count"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "jobsBySource": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sourceId": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          },
+                          "averageScore": {
+                            "type": "number"
+                          },
+                          "lastSeenAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceTrustScore": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "sourceId",
+                          "source",
+                          "count",
+                          "averageScore",
+                          "lastSeenAt",
+                          "sourceTrustScore"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "topSources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sourceId": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          },
+                          "averageScore": {
+                            "type": "number"
+                          },
+                          "lastSeenAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceTrustScore": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "sourceId",
+                          "source",
+                          "count",
+                          "averageScore",
+                          "lastSeenAt",
+                          "sourceTrustScore"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "topStacks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "stack": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "stack",
+                          "count"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "lastRun": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "startedAt": {
+                          "type": "string"
+                        },
+                        "finishedAt": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "rawItems": {
+                          "type": "integer"
+                        },
+                        "normalizedJobs": {
+                          "type": "integer"
+                        },
+                        "acceptedJobs": {
+                          "type": "integer"
+                        },
+                        "rejectedJobs": {
+                          "type": "integer"
+                        },
+                        "newJobs": {
+                          "type": "integer"
+                        },
+                        "rediscoveredJobs": {
+                          "type": "integer"
+                        },
+                        "highScoringJobs": {
+                          "type": "integer"
+                        },
+                        "notificationsSent": {
+                          "type": "integer"
+                        },
+                        "collectorFailures": {
+                          "type": "integer"
+                        },
+                        "sourceMetrics": {
+                          "type": "array",
+                          "items": {}
+                        },
+                        "errors": {
+                          "type": "array",
+                          "items": {}
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "status",
+                        "startedAt",
+                        "finishedAt",
+                        "rawItems",
+                        "normalizedJobs",
+                        "acceptedJobs",
+                        "rejectedJobs",
+                        "newJobs",
+                        "rediscoveredJobs",
+                        "highScoringJobs",
+                        "notificationsSent",
+                        "collectorFailures",
+                        "sourceMetrics",
+                        "errors"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "recentErrors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "runId": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "startedAt": {
+                            "type": "string"
+                          },
+                          "finishedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "errors": {
+                            "type": "array",
+                            "items": {}
+                          }
+                        },
+                        "required": [
+                          "runId",
+                          "status",
+                          "startedAt",
+                          "finishedAt",
+                          "errors"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "newJobsToday",
+                    "rediscoveredJobsToday",
+                    "highScoreJobs",
+                    "averageScore",
+                    "notificationScoreThreshold",
+                    "jobsByStatus",
+                    "jobsBySource",
+                    "topSources",
+                    "topStacks",
+                    "lastRun",
+                    "recentErrors"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs": {
+      "get": {
+        "operationId": "listJobs",
+        "summary": "List jobs",
+        "tags": [
+          "Jobs"
+        ],
+        "description": "Returns a paginated, filterable list of jobs.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "in": "query",
+            "name": "pageSize",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "source",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "stack",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "minScore",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "remoteType",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "seniority",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "q",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "lastSeen_desc",
+                "score_desc",
+                "discovered_desc",
+                "company_asc",
+                "title_asc"
+              ],
+              "default": "lastSeen_desc"
+            },
+            "in": "query",
+            "name": "sort",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "sourceId": {
+                            "type": "string"
+                          },
+                          "collector": {
+                            "type": "string"
+                          },
+                          "discoveredVia": {
+                            "type": "string"
+                          },
+                          "sourceUrl": {
+                            "type": "string"
+                          },
+                          "canonicalUrl": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "companyName": {
+                            "type": "string"
+                          },
+                          "location": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "remoteType": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "salaryMin": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "salaryMax": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "currency": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "seniority": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "stackTags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "geoRestrictions": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "score": {
+                            "type": "number"
+                          },
+                          "sourceTrustScore": {
+                            "type": "number"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "notifiedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "matchReasons": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "riskFlags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "recommendedAction": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "postedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "discoveredAt": {
+                            "type": "string"
+                          },
+                          "lastSeenAt": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "source",
+                          "sourceId",
+                          "collector",
+                          "discoveredVia",
+                          "sourceUrl",
+                          "canonicalUrl",
+                          "title",
+                          "companyName",
+                          "location",
+                          "remoteType",
+                          "salaryMin",
+                          "salaryMax",
+                          "currency",
+                          "seniority",
+                          "stackTags",
+                          "geoRestrictions",
+                          "score",
+                          "sourceTrustScore",
+                          "status",
+                          "notifiedAt",
+                          "matchReasons",
+                          "riskFlags",
+                          "recommendedAction",
+                          "postedAt",
+                          "discoveredAt",
+                          "lastSeenAt",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "pageSize": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        },
+                        "hasNextPage": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "pageSize",
+                        "total",
+                        "totalPages",
+                        "hasNextPage"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "pagination"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{id}": {
+      "get": {
+        "operationId": "getJobDetail",
+        "summary": "Get job details",
+        "tags": [
+          "Jobs"
+        ],
+        "description": "Returns detailed information about a specific job including its events.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "sourceId": {
+                      "type": "string"
+                    },
+                    "collector": {
+                      "type": "string"
+                    },
+                    "discoveredVia": {
+                      "type": "string"
+                    },
+                    "sourceUrl": {
+                      "type": "string"
+                    },
+                    "canonicalUrl": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "companyName": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "remoteType": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "salaryMin": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "salaryMax": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "currency": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "seniority": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "stackTags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "geoRestrictions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "score": {
+                      "type": "number"
+                    },
+                    "sourceTrustScore": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "notifiedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "matchReasons": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "riskFlags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "recommendedAction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "postedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "discoveredAt": {
+                      "type": "string"
+                    },
+                    "lastSeenAt": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "normalizedTitle": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "description": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "requirements": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "jobId": {
+                            "type": "string"
+                          },
+                          "eventType": {
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "jobId",
+                          "eventType",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "source",
+                    "sourceId",
+                    "collector",
+                    "discoveredVia",
+                    "sourceUrl",
+                    "canonicalUrl",
+                    "title",
+                    "companyName",
+                    "location",
+                    "remoteType",
+                    "salaryMin",
+                    "salaryMax",
+                    "currency",
+                    "seniority",
+                    "stackTags",
+                    "geoRestrictions",
+                    "score",
+                    "sourceTrustScore",
+                    "status",
+                    "notifiedAt",
+                    "matchReasons",
+                    "riskFlags",
+                    "recommendedAction",
+                    "postedAt",
+                    "discoveredAt",
+                    "lastSeenAt",
+                    "createdAt",
+                    "updatedAt",
+                    "normalizedTitle",
+                    "description",
+                    "requirements",
+                    "events"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{id}/status": {
+      "patch": {
+        "operationId": "updateJobStatus",
+        "summary": "Update job status",
+        "tags": [
+          "Jobs"
+        ],
+        "description": "Updates a job status to a user-controlled status value.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "new",
+                      "saved",
+                      "discarded",
+                      "applied",
+                      "ignored",
+                      "interviewing",
+                      "offer",
+                      "ghosted"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "sourceId": {
+                      "type": "string"
+                    },
+                    "collector": {
+                      "type": "string"
+                    },
+                    "discoveredVia": {
+                      "type": "string"
+                    },
+                    "sourceUrl": {
+                      "type": "string"
+                    },
+                    "canonicalUrl": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "companyName": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "remoteType": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "salaryMin": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "salaryMax": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "currency": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "seniority": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "stackTags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "geoRestrictions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "score": {
+                      "type": "number"
+                    },
+                    "sourceTrustScore": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "notifiedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "matchReasons": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "riskFlags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "recommendedAction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "postedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "discoveredAt": {
+                      "type": "string"
+                    },
+                    "lastSeenAt": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "source",
+                    "sourceId",
+                    "collector",
+                    "discoveredVia",
+                    "sourceUrl",
+                    "canonicalUrl",
+                    "title",
+                    "companyName",
+                    "location",
+                    "remoteType",
+                    "salaryMin",
+                    "salaryMax",
+                    "currency",
+                    "seniority",
+                    "stackTags",
+                    "geoRestrictions",
+                    "score",
+                    "sourceTrustScore",
+                    "status",
+                    "notifiedAt",
+                    "matchReasons",
+                    "riskFlags",
+                    "recommendedAction",
+                    "postedAt",
+                    "discoveredAt",
+                    "lastSeenAt",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sources": {
+      "get": {
+        "operationId": "listSources",
+        "summary": "List job sources",
+        "tags": [
+          "Sources"
+        ],
+        "description": "Returns all configured and database-only sources with their job statistics.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "baseUrl": {
+                            "type": "string"
+                          },
+                          "accessMode": {
+                            "type": "string"
+                          },
+                          "sourceTrustScore": {
+                            "type": "number"
+                          },
+                          "trustBucket": {
+                            "type": "string"
+                          },
+                          "rateLimitMs": {
+                            "type": "number"
+                          },
+                          "attributionRequired": {
+                            "type": "boolean"
+                          },
+                          "notes": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "queries": {
+                            "type": "array",
+                            "items": {}
+                          },
+                          "endpoints": {
+                            "type": "array",
+                            "items": {}
+                          },
+                          "stats": {
+                            "type": "object",
+                            "properties": {
+                              "totalJobs": {
+                                "type": "integer"
+                              },
+                              "averageScore": {
+                                "type": "number"
+                              },
+                              "sourceTrustScore": {
+                                "type": "number"
+                              },
+                              "lastSeenAt": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "totalJobs",
+                              "averageScore",
+                              "sourceTrustScore",
+                              "lastSeenAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "type",
+                          "enabled",
+                          "baseUrl",
+                          "accessMode",
+                          "sourceTrustScore",
+                          "trustBucket",
+                          "rateLimitMs",
+                          "attributionRequired",
+                          "notes",
+                          "queries",
+                          "endpoints",
+                          "stats"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "operationId": "listEvents",
+        "summary": "List job events",
+        "tags": [
+          "Events"
+        ],
+        "description": "Returns a paginated list of job lifecycle events, optionally filtered by job or event type.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "in": "query",
+            "name": "pageSize",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "jobId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "eventType",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "jobId": {
+                            "type": "string"
+                          },
+                          "eventType": {
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "job": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "companyName": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "score": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "companyName",
+                              "status",
+                              "score"
+                            ],
+                            "additionalProperties": false,
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "jobId",
+                          "eventType",
+                          "createdAt",
+                          "job"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "pageSize": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        },
+                        "hasNextPage": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "pageSize",
+                        "total",
+                        "totalPages",
+                        "hasNextPage"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "pagination"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "operationId": "getSettings",
+        "summary": "Get runtime settings",
+        "tags": [
+          "Settings"
+        ],
+        "description": "Returns current runtime configuration settings.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notificationScoreThreshold": {
+                      "type": "integer"
+                    },
+                    "collectCron": {
+                      "type": "string"
+                    },
+                    "searxngBaseUrl": {
+                      "type": "string"
+                    },
+                    "apiCorsOrigin": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "notificationScoreThreshold",
+                    "collectCron",
+                    "searxngBaseUrl",
+                    "apiCorsOrigin"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Service health checks"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Aggregated dashboard metrics"
+    },
+    {
+      "name": "Jobs",
+      "description": "Job listing, detail, and status management"
+    },
+    {
+      "name": "Sources",
+      "description": "Job source configuration and statistics"
+    },
+    {
+      "name": "Events",
+      "description": "Job lifecycle event log"
+    },
+    {
+      "name": "Settings",
+      "description": "Runtime configuration settings"
+    }
+  ]
+}
