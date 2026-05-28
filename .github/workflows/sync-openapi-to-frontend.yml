@@ -1,0 +1,129 @@
+name: Sync OpenAPI to Frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/sync-openapi-to-frontend.yml"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "prisma/**"
+      - "src/api/**"
+      - "src/cli/generate-spec.ts"
+      - "src/server/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FRONTEND_REPOSITORY: ${{ vars.FRONTEND_REPOSITORY }}
+  FRONTEND_BASE_BRANCH: ${{ vars.FRONTEND_BASE_BRANCH || 'main' }}
+  FRONTEND_OPENAPI_PATH: ${{ vars.FRONTEND_OPENAPI_PATH || 'openapi.json' }}
+
+jobs:
+  sync-openapi:
+    name: Generate contract and open frontend PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout backend
+        uses: actions/checkout@v4
+        with:
+          path: backend
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable pnpm
+        working-directory: backend
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.11.0 --activate
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate OpenAPI
+        working-directory: backend
+        run: pnpm generate:openapi
+
+      - name: Validate frontend sync configuration
+        run: |
+          if [ -z "$FRONTEND_REPOSITORY" ]; then
+            echo "Missing repository variable: FRONTEND_REPOSITORY"
+            exit 1
+          fi
+
+          if [ -z "$FRONTEND_BASE_BRANCH" ]; then
+            echo "Missing repository variable: FRONTEND_BASE_BRANCH"
+            exit 1
+          fi
+
+          if [ -z "$FRONTEND_OPENAPI_PATH" ]; then
+            echo "Missing repository variable: FRONTEND_OPENAPI_PATH"
+            exit 1
+          fi
+
+          if [ -z "$FRONTEND_SYNC_PAT" ]; then
+            echo "Missing repository secret: FRONTEND_SYNC_PAT"
+            exit 1
+          fi
+        env:
+          FRONTEND_SYNC_PAT: ${{ secrets.FRONTEND_SYNC_PAT }}
+
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.FRONTEND_REPOSITORY }}
+          ref: ${{ env.FRONTEND_BASE_BRANCH }}
+          token: ${{ secrets.FRONTEND_SYNC_PAT }}
+          path: frontend
+
+      - name: Copy generated contract
+        working-directory: frontend
+        run: |
+          mkdir -p "$(dirname "$FRONTEND_OPENAPI_PATH")"
+          cp ../backend/openapi.json "$FRONTEND_OPENAPI_PATH"
+
+          if [ -z "$(git status --porcelain -- "$FRONTEND_OPENAPI_PATH")" ]; then
+            echo "No OpenAPI contract changes detected."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+        id: contract_diff
+
+      - name: Commit and push frontend contract update
+        if: steps.contract_diff.outputs.has_changes == 'true'
+        working-directory: frontend
+        run: |
+          BRANCH_NAME="chore/update-api-contract-${GITHUB_SHA}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH_NAME"
+          git add "$FRONTEND_OPENAPI_PATH"
+          git commit -m "chore: update backend OpenAPI contract"
+          git push --set-upstream origin "$BRANCH_NAME"
+
+          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+        id: push_contract
+
+      - name: Open frontend pull request
+        if: steps.contract_diff.outputs.has_changes == 'true'
+        working-directory: frontend
+        run: |
+          gh pr create \
+            --repo "$FRONTEND_REPOSITORY" \
+            --base "$FRONTEND_BASE_BRANCH" \
+            --head "${{ steps.push_contract.outputs.branch_name }}" \
+            --title "chore: update backend OpenAPI contract" \
+            --body "Pull request generated automatically from backend commit ${GITHUB_SHA}."
+        env:
+          GH_TOKEN: ${{ secrets.FRONTEND_SYNC_PAT }}

@@ -2,7 +2,6 @@
 
 ## Purpose
 Defines the backend-owned OpenAPI contract used for static frontend client generation.
-
 ## Requirements
 ### Requirement: Generated OpenAPI document
 The backend SHALL generate an OpenAPI document from Fastify route definitions and Zod schemas rather than requiring a separately maintained handwritten OpenAPI specification.
@@ -38,15 +37,19 @@ The generated OpenAPI document SHALL provide stable operation IDs and response s
 - **THEN** the OpenAPI response schema is updated in the same change so generated frontend types reflect the backend contract
 
 ### Requirement: Static frontend contract consumption
-The frontend SHALL consume the backend OpenAPI contract from a generated `openapi.json` artifact rather than from a public Swagger UI or `/docs` route.
+The frontend SHALL consume the backend OpenAPI contract from a generated `openapi.json` artifact rather than from a public Swagger UI or `/docs` route, and backend CI SHALL be able to publish updated contract artifacts to the frontend repository through reviewable pull requests.
 
 #### Scenario: Frontend reads private repository artifact
 - **WHEN** the frontend generation pipeline needs the API contract
-- **THEN** it can read the generated `openapi.json` from the backend repository, using a Git provider access token if the repository is private
+- **THEN** it can read the generated `openapi.json` from the backend repository or from the synchronized frontend repository copy, using a Git provider access token if the repository is private
 
 #### Scenario: Public docs route is unavailable
 - **WHEN** frontend code generation runs outside the backend process
 - **THEN** it does not require a public `/docs` route or a long-running backend HTTP server to retrieve the OpenAPI document
+
+#### Scenario: Backend CI publishes contract update
+- **WHEN** a backend change updates the generated OpenAPI artifact after merging to `main`
+- **THEN** backend CI proposes the updated `openapi.json` to the frontend repository through a pull request instead of modifying the frontend main branch directly
 
 ### Requirement: Private API security compatibility
 The OpenAPI and Swagger integration SHALL preserve the existing private API security model, including internal authentication for protected `/api` routes when enabled and public access for `/health`.
@@ -62,3 +65,4 @@ The OpenAPI and Swagger integration SHALL preserve the existing private API secu
 #### Scenario: OpenAPI artifact is generated
 - **WHEN** the local OpenAPI generation script builds the server in memory
 - **THEN** it extracts the OpenAPI object without exposing a public documentation route
+
