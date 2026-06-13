@@ -23,3 +23,15 @@ export interface CollectionCycleSummary {
   collectorFailures: number;
   sourceMetrics: SourceRunMetrics[];
 }
+
+export interface ProcessRawItemsResult {
+  normalizedJobs: number;
+  acceptedJobs: number;
+  rejectedJobs: number;
+  newJobs: number;
+  rediscoveredJobs: number;
+  highScoringJobs: number;
+  notificationsSent: number;
+  highScoringPersistedJobs: import('@prisma/client').Job[];
+  sourceMetrics: Map<string, SourceRunMetrics>;
+}

@@ -3,7 +3,7 @@ import { prisma } from '../persistence/prisma.js';
 import { buildCollectionCycle } from './bootstrap.js';
 
 async function main(): Promise<void> {
-  const cycle = await buildCollectionCycle();
+  const { cycle } = await buildCollectionCycle();
   await cycle.run();
 }
 

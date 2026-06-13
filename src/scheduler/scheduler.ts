@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { env } from '../config/env.js';
 import { logger } from '../logger/logger.js';
 import type { CollectionCycle } from '../pipeline/collection-cycle.js';
+import type { DynamicSearchScheduler } from './dynamic-search.scheduler.js';
 
 export class Scheduler {
   private running = false;
@@ -9,7 +10,10 @@ export class Scheduler {
   private inFlight: Promise<void> | null = null;
   private stopping = false;
 
-  constructor(private readonly collectionCycle: CollectionCycle) {}
+  constructor(
+    private readonly collectionCycle: CollectionCycle,
+    private readonly dynamicSearchScheduler?: DynamicSearchScheduler
+  ) {}
 
   start(): void {
     if (!cron.validate(env.COLLECT_CRON)) {
@@ -59,6 +63,12 @@ export class Scheduler {
     this.running = true;
     const cyclePromise = this.collectionCycle
       .run()
+      .then(async () => {
+        // After main collection cycle, run dynamic search configs
+        if (this.dynamicSearchScheduler && !this.stopping) {
+          await this.dynamicSearchScheduler.runDueConfigs();
+        }
+      })
       .then(() => undefined)
       .catch((error) => {
         logger.error({ err: error }, 'Scheduled collection failed');

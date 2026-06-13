@@ -1,12 +1,20 @@
 import { logger } from '../logger/logger.js';
 import { env } from '../config/env.js';
 import { Scheduler } from '../scheduler/scheduler.js';
+import { DynamicSearchScheduler } from '../scheduler/dynamic-search.scheduler.js';
 import { prisma } from '../persistence/prisma.js';
 import { buildCollectionCycle } from './bootstrap.js';
 
 async function main(): Promise<void> {
-  const cycle = await buildCollectionCycle();
-  const scheduler = new Scheduler(cycle);
+  const { cycle, sources } = await buildCollectionCycle();
+
+  // Set up dynamic search scheduler
+  const dynamicSearchScheduler = new DynamicSearchScheduler({
+    allSources: sources,
+    processRawItems: (items) => cycle.processRawItems(items)
+  });
+
+  const scheduler = new Scheduler(cycle, dynamicSearchScheduler);
   scheduler.start();
   logger.info('Worker started');
 

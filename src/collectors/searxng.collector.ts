@@ -96,7 +96,7 @@ export class SearxngCollector implements JobCollector {
   }
 }
 
-function inferSourceFromUrl(url: string, sources: SourceConfig[]): SourceConfig | null {
+export function inferSourceFromUrl(url: string, sources: SourceConfig[]): SourceConfig | null {
   const resultDomain = domainFromUrl(url);
   if (!resultDomain) return null;
 

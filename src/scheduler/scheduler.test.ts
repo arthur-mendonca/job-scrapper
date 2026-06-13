@@ -1,6 +1,21 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Scheduler } from './scheduler.js';
 
+vi.mock('../config/env.js', () => ({
+  env: {
+    COLLECT_CRON: '0 */6 * * 1-5'
+  }
+}));
+
+vi.mock('../logger/logger.js', () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
+  }
+}));
+
+import { Scheduler } from './scheduler.js';
 describe('Scheduler graceful shutdown', () => {
   it('awaits an in-flight cycle within the timeout', async () => {
     vi.useFakeTimers();

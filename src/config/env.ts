@@ -57,6 +57,17 @@ const envSchema = z.object({
     .default("false")
     .transform((value) => value.toLowerCase() === "true"),
   WORKER_SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().min(0).default(15000),
+  DYNAMIC_SEARCH_ENABLED: z
+    .string()
+    .default("true")
+    .transform((value) => value.toLowerCase() === "true"),
+  DYNAMIC_SEARCH_MIN_INTERVAL_MINUTES: z.coerce.number().int().min(15).default(60),
+  DYNAMIC_SEARCH_MAX_PER_CYCLE: z.coerce.number().int().min(1).default(5),
+  DYNAMIC_SEARCH_MAX_CONCURRENT: z.coerce.number().int().min(1).default(2),
+  DYNAMIC_SEARCH_JITTER_MAX_MS: z.coerce.number().int().min(0).default(30000),
+  DYNAMIC_SEARCH_RATE_LIMIT_MS: z.coerce.number().int().min(500).default(3000),
+  DYNAMIC_SEARCH_GLOBAL_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(60000).default(3600000),
+  DYNAMIC_SEARCH_GLOBAL_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(100),
 });
 
 export type Env = z.infer<typeof envSchema>;

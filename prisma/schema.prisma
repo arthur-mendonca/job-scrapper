@@ -119,3 +119,44 @@ model CollectionRun {
   @@index([startedAt])
   @@index([finishedAt])
 }
+
+model DynamicSearchConfig {
+  id                  String    @id @default(cuid())
+  label               String
+  queryText           String
+  normalizedQueryText String
+  targetEngines       String[]  @default(["google", "bing", "duckduckgo"])
+  intervalMinutes     Int       @default(360)
+  cronExpression      String?
+  isActive            Boolean   @default(true)
+
+  // Enrichment controls
+  targetSites         String[]  @default([])
+  excludedTerms       String[]  @default([])
+  requiredTerms       String[]  @default([])
+  locale              String    @default("en-US")
+  maxResults          Int       @default(30)
+
+  // Execution metadata
+  lastRunAt           DateTime?
+  nextRunAt           DateTime?
+  lastSuccessAt       DateTime?
+  lastFailureAt       DateTime?
+  failureCount        Int       @default(0)
+  lastError           String?
+  lastGeneratedDork   String?
+  
+  // Last execution metrics
+  lastItemsCount      Int?
+  lastAcceptedCount   Int?
+  lastRejectedCount   Int?
+  lastNewCount        Int?
+  lastRediscoveredCount Int?
+
+  // Audit
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([nextRunAt])
+}
